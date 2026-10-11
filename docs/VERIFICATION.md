@@ -57,6 +57,8 @@ Ini pengamatan singkat pada localhost, bukan skor Lighthouse, Core Web Vitals la
 
 Preview menggunakan GitHub Pages pada branch `gh-pages`; source aplikasi lengkap pada `main`. Build mengekspor seed dari SQLite dalam memori dan tidak mengunggah database lokal, `.env`, akun, atau artefak tes.
 
+Alamat publik https://nassrudin.github.io/nexivo-preview/ telah dibuka dengan Chrome dan diperiksa ulang menggunakan skrip preview yang sama: **22 pemeriksaan lulus**, lima scan axe bersih, seluruh aset berhasil dimuat dari subfolder repository, dan tidak ada request backend/mutasi, HTTP error, atau JavaScript error. Log lokal: `artifacts/pages-online-review.log`.
+
 Publikasi backend, Supabase, email, pembayaran, dan database production belum dilakukan. Pembaca layar manual, Safari/iOS, perangkat fisik, beban trafik, serta audit keamanan menyeluruh belum diuji. Hasil axe bukan sertifikasi aksesibilitas; tes lokal bukan jaminan keamanan menyeluruh.
 
 Artefak lokal diabaikan Git: `artifacts/dashboard-review.log`, `pages-review.log`, `pages-performance.log`, serta screenshot `nexivo-studio-*` dan `nexivo-pages-*`.
