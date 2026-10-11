@@ -2,6 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import "@fontsource-variable/dm-sans";
 import "./styles.css";
+import "./studio.css";
 import App from "./App";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(

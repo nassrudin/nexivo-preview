@@ -1,10 +1,14 @@
-# NEXIVO
+﻿# NEXIVO
 
-Website webinar **Next Generation Virtual Learning & Knowledge**. Implementasi lokal untuk ditinjau: React + TypeScript + Vite, API Express, serta database SQLite persisten. Logo memakai aset yang diberikan. Font DM Sans disajikan lokal; ilustrasi dibuat dengan SVG/CSS.
+Website webinar **Next Generation Virtual Learning & Knowledge**. Dashboard React + TypeScript + Vite dengan backend Express dan SQLite lokal.
 
-## Menjalankan
+**Preview online:** https://nassrudin.github.io/nexivo-preview/
 
-Gunakan **Node.js 24 atau lebih baru**. Dari folder proyek, jalankan di terminal VS Code:
+Preview GitHub Pages hanya untuk meninjau desain dan enam topik rencana. Pembuatan akun, bookmark, penyimpanan minat, pendaftaran, administrasi, dan sertifikat nyata memerlukan backend. Formulir data pribadi tidak ditampilkan pada preview statis.
+
+## Menjalankan aplikasi lengkap
+
+Gunakan Node.js **24 atau lebih baru**. Di terminal PowerShell pada folder proyek:
 
 ```powershell
 npm.cmd ci
@@ -12,60 +16,40 @@ Copy-Item .env.example .env
 npm.cmd run dev
 ```
 
-Buka **http://127.0.0.1:3000**. Jangan mengganti alamat menjadi `localhost` tanpa menyesuaikan `APP_URL`: origin harus sama untuk perlindungan CSRF. Hentikan server dengan `Ctrl+C`. Perubahan frontend langsung muncul; perubahan backend memerlukan restart server.
+Buka http://127.0.0.1:3000. Gunakan origin yang sama dengan `APP_URL` agar pemeriksaan CSRF bekerja. Database otomatis dibuat di `data/nexivo.sqlite`. Tidak memerlukan Supabase atau API key. Keenam topik awal diberi label **Dalam persiapan**; jadwal, narasumber, dan harga tidak direkayasa.
 
-Database dibuat otomatis di `data/nexivo.sqlite`. Tidak memerlukan Supabase, API key, atau akun cloud. Keenam program awal adalah **rencana topik**, bukan pengumuman acara nyata. Akun, bookmark, minat, dan pendaftaran yang dibuat pengguna benar-benar disimpan.
-
-Untuk memeriksa build hasil optimasi, hentikan server development terlebih dahulu:
+Untuk build lokal:
 
 ```powershell
 npm.cmd run build
 npm.cmd run preview
 ```
 
-`preview` melayani frontend build dan API lokal. Mode ini menggunakan cookie development dan hanya untuk peninjauan lokal. `npm.cmd start` menggunakan pengaturan production, memerlukan `APP_URL` HTTPS yang sesuai origin publik, serta reverse proxy HTTPS yang disiapkan terpisah. Proyek ini belum dipublikasikan.
+Hentikan server development sebelum menjalankan preview pada port yang sama. `npm.cmd start` untuk production membutuhkan origin HTTPS dan reverse proxy yang disiapkan terpisah. Backend production belum dipublikasikan.
 
 ## Environment
 
-`.env` dibaca oleh perintah dev, preview, start, dan admin:create. Nilai environment terminal memiliki prioritas. `.env`, database, dan artefak pengujian diabaikan Git.
-
 | Nama | Default / fungsi |
 | --- | --- |
-| `HOST` | `127.0.0.1`, hanya menerima koneksi lokal |
+| `HOST` | `127.0.0.1` |
 | `PORT` | `3000` |
-| `APP_URL` | `http://127.0.0.1:3000`, origin CSRF dan alamat QR sertifikat |
+| `APP_URL` | `http://127.0.0.1:3000`; harus sama dengan origin frontend |
 | `DATABASE_PATH` | `./data/nexivo.sqlite` |
-| `NEXIVO_ADMIN_EMAIL` | Hanya diperlukan saat membuat pengelola |
-| `NEXIVO_ADMIN_PASSWORD` | Hanya saat membuat pengelola; minimal 16 karakter |
+| `NEXIVO_ADMIN_EMAIL` | Hanya saat membuat pengelola |
+| `NEXIVO_ADMIN_PASSWORD` | Hanya saat membuat pengelola, minimal 16 karakter |
 
-## Membuat pengelola
+`.env`, database, artefak pengujian, dan build diabaikan Git. Tidak ada akun admin atau kata sandi bawaan. Untuk membuat pengelola, isi environment di terminal, lalu jalankan `npm.cmd run admin:create`. Email harus belum digunakan. Gunakan `Read-Host -AsSecureString` untuk memasukkan kata sandi tanpa menuliskannya ke riwayat perintah.
 
-Tidak ada akun admin atau kata sandi default pada database aplikasi utama. Jalankan berikut di terminal PowerShell; kata sandi diminta secara tersembunyi dan tidak ditulis sebagai perintah:
+## Build GitHub Pages
 
 ```powershell
-$env:NEXIVO_ADMIN_EMAIL = Read-Host 'Email pengelola'
-$nexivoSecurePassword = Read-Host 'Kata sandi (minimal 16 karakter)' -AsSecureString
-$env:NEXIVO_ADMIN_PASSWORD = [Net.NetworkCredential]::new('', $nexivoSecurePassword).Password
-try {
-  npm.cmd run admin:create
-} finally {
-  Remove-Item Env:NEXIVO_ADMIN_EMAIL, Env:NEXIVO_ADMIN_PASSWORD -ErrorAction SilentlyContinue
-  $nexivoSecurePassword.Dispose()
-}
+npm.cmd run build:pages
+node node_modules/vite/bin/vite.js preview --outDir dist-pages --host 127.0.0.1 --port 3002
 ```
 
-Masuk dengan akun tersebut, lalu pilih **Pengelola**. Email harus belum digunakan; perintah ini tidak menaikkan hak akses akun peserta yang sudah ada.
+Buka http://127.0.0.1:3002. Mode `pages` menggunakan aset relatif agar berjalan di subfolder repository. Topik preview diekspor dari seed database dalam memori, **bukan database pengguna lokal**. Tidak ada request ke `/api` pada preview.
 
-## Alur kegiatan
-
-1. Pengelola membuat webinar dengan tanggal WIB, narasumber terkonfirmasi, kuota, tautan Zoom/Google Meet, kode kehadiran, dan ketentuan sertifikat. Pilih status **Publikasikan** untuk membuka pendaftaran sebelum sesi dimulai.
-2. Peserta mendaftar melalui katalog. Server memeriksa persetujuan, kepemilikan akun, kuota, dan pendaftaran ganda. Kegiatan tampil di **Belajarku**.
-3. Ruang webinar tersedia bagi peserta terdaftar mulai 15 menit sebelum sesi hingga waktu selesai. Peserta mengisi kode absensi masuk, mencatat absensi akhir, lalu mengisi evaluasi.
-4. Setelah kegiatan selesai, pengelola memeriksa catatan platform webinar dan memvalidasi kehadiran dengan alasan. Server menghitung durasi di dalam interval kegiatan.
-5. Sertifikat gratis dapat diterbitkan jika peserta memilih sertifikat, memenuhi minimum durasi, mendapat persetujuan pengelola, dan menyelesaikan evaluasi. Unduhan PDF hanya untuk pemilik/admin. QR membuka verifikasi publik dengan nama disingkat.
-6. Pencabutan sertifikat memerlukan alasan dan tercatat pada audit. Status publik diperbarui; dokumen yang dicabut tidak dapat diunduh kembali dari aplikasi.
-
-Absensi kode merupakan pencatatan peserta, bukan bukti otomatis kehadiran di Zoom/Meet. Validasi pengelola tetap diperlukan. Acara yang sudah dimulai menutup pendaftaran; status kartu menyesuaikan waktu. Tautan ruang dan kode kehadiran tidak ditampilkan di API katalog publik.
+Source ada di branch `main`. Hasil `dist-pages/` dipublikasikan pada branch `gh-pages`, dengan `.nojekyll`; GitHub Pages menggunakan branch tersebut sebagai sumber. Tidak membutuhkan layanan berbayar atau workflow dengan secret.
 
 ## Pemeriksaan
 
@@ -74,40 +58,32 @@ npm.cmd run lint
 npm.cmd run typecheck
 npm.cmd test
 npm.cmd run build
+npm.cmd run build:pages
 ```
 
-Tes backend menggunakan database dalam memori dan waktu terkontrol. Untuk mengulang pemeriksaan browser dengan Playwright CLI yang telah dipasang:
+Tes HTTP menggunakan database dalam memori. Setelah server lokal berjalan pada port 3000, verifikasi dashboard dengan Playwright CLI:
 
 ```powershell
-npx.cmd tsx scripts/prepare-review.ts
-$env:PORT = '3001'
-$env:APP_URL = 'http://127.0.0.1:3001'
-$env:DATABASE_PATH = './artifacts/browser-review.sqlite'
-npm.cmd run preview
+New-Item -ItemType Directory -Force artifacts | Out-Null
+playwright-cli.cmd -s=nexivo-review open http://127.0.0.1:3000 --browser=chrome
+playwright-cli.cmd -s=nexivo-review run-code --filename=scripts/browser/review-dashboard.js
 ```
 
-Di terminal kedua:
+Pemeriksaan browser mencakup pencarian, filter, detail, kalender, form invalid/login gagal, keyboard/fokus, tema, reduced motion, lima ukuran layar, console/network, serta axe. Jalankan pada database review dengan enam topik awal; tidak ada pembuatan akun atau acara nyata oleh skrip dashboard. Skrip preview statis dapat dijalankan dengan `scripts/browser/review-preview.js` pada server port 3002.
 
-```powershell
-playwright-cli.cmd -s=nexivo-review open http://127.0.0.1:3001 --browser=chrome
-playwright-cli.cmd -s=nexivo-review run-code --filename=.tools/review-ui.js
-playwright-cli.cmd -s=nexivo-review run-code --filename=.tools/review-admin.js
-playwright-cli.cmd -s=nexivo-review close
-```
+Lihat [keputusan desain](docs/DESIGN.md) dan [hasil verifikasi](docs/VERIFICATION.md).
 
-`review-ui` dijalankan lebih dahulu pada database dengan enam program awal. `review-admin` menambahkan satu acara khusus pengujian, sehingga uji jumlah katalog awal perlu memakai database pengujian baru jika diulang. Jalankan CLI dari root proyek agar path axe dan screenshot dapat ditemukan.
+## Alur backend lokal
 
-Untuk meninjau alur sertifikat, jalankan `npx.cmd tsx scripts/prepare-certificate-review.ts` di terminal terpisah, lalu `.tools/review-certificate.js` melalui `run-code`. Fixture ini membuat waktu kehadiran simulasi pada acara selesai. Aturan durasi/waktu diuji terpisah oleh tes HTTP, bukan dengan menunggu webinar nyata. `.tools/review-evaluation.js` memeriksa pemuatan kembali evaluasi yang tersimpan.
+Pengelola membuat webinar dengan jadwal WIB, narasumber, kuota, tautan Zoom/Meet, kode kehadiran, dan ketentuan sertifikat. Peserta mendaftar, mengikuti kegiatan, mencatat absensi masuk/akhir, dan mengisi evaluasi. Pengelola memvalidasi kehadiran sebelum menerbitkan sertifikat gratis sesuai syarat. PDF hanya dapat diunduh pemilik/admin; verifikasi publik menyamarkan nama. Pencabutan sertifikat dicatat dengan alasan.
 
-Fixture review hanya menulis `artifacts/browser-review.sqlite` dan menggunakan akun contoh khusus tes. Jangan gunakan file itu sebagai `DATABASE_PATH` untuk layanan nyata. Setelah menghentikan server review, gunakan terminal baru untuk menjalankan aplikasi utama agar environment pengujian tidak terbawa.
+Pendaftaran ganda, kuota, waktu akses, otorisasi, dan validasi diperiksa server. Absensi kode tetap membutuhkan verifikasi pengelola; bukan integrasi otomatis dengan kehadiran Zoom/Meet.
 
-Lihat [hasil verifikasi](docs/VERIFICATION.md) dan [keputusan desain serta sumber konten](docs/DESIGN.md).
+## Keterbatasan
 
-## Batas versi ini
-
-- Supabase belum terhubung karena belum ada proyek. Penyimpanan lokal berjalan dengan SQLite; tidak ada migration atau RLS Supabase yang diklaim sudah diterapkan.
-- Email verifikasi, reset kata sandi, email otomatis, payment gateway, API Zoom/Meet, rekaman, dan unggahan file belum tersedia. Penerbitan sertifikat berbayar ditolak server.
-- Pengelola dapat membuat kegiatan baru, memeriksa peserta/minat, serta memvalidasi dan menerbitkan/mencabut sertifikat. Perubahan atau pembatalan kegiatan yang sudah dibuat belum memiliki alur operasional; diperlukan sebelum menerima pendaftaran publik.
-- Badan hukum, akreditasi, harga, tanggal acara nyata, narasumber, kebijakan retensi, dan kontak pengelola data perlu dikonfirmasi. Tidak ada statistik pemasaran atau testimoni fiktif.
-- SQLite dan pembatasan request dalam memori cocok untuk satu proses server lokal. Sebelum trafik publik, siapkan hosting HTTPS, backup/restore, pemantauan, pengiriman email/pemulihan akun, kebijakan data, serta pembatasan request yang sesuai arsitektur hosting.
-- Pengujian lokal bukan audit keamanan menyeluruh atau jaminan bebas celah. Tidak ada publikasi, perubahan database production, atau pembelian layanan.
+- Backend, database, dan pendaftaran nyata belum dihosting; GitHub Pages melayani preview statis.
+- Supabase belum terhubung karena proyek belum tersedia.
+- Email verifikasi/reset kata sandi, email otomatis, payment gateway, rekaman, dan upload belum tersedia. Sertifikat berbayar ditolak server.
+- Perubahan/pembatalan acara terdaftar, kebijakan retensi, dan operasional layanan publik perlu dilengkapi sebelum peluncuran nyata.
+- Legalitas, akreditasi, tanggal acara, narasumber, harga, dan kontak pengelola data harus dikonfirmasi pemilik.
+- Hosting backend memerlukan HTTPS, backup, pemantauan, dan pembatasan request sesuai arsitektur. Pengujian ini bukan audit keamanan menyeluruh atau jaminan bebas celah.

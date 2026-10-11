@@ -6,7 +6,14 @@ import globals from "globals";
 
 export default tseslint.config(
   {
-    ignores: ["dist", "node_modules", ".tools", ".playwright-cli", "artifacts"],
+    ignores: [
+      "dist",
+      "dist-pages",
+      "node_modules",
+      ".tools",
+      ".playwright-cli",
+      "artifacts",
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
@@ -31,5 +38,10 @@ export default tseslint.config(
   {
     files: ["src/components.tsx"],
     rules: { "react-refresh/only-export-components": "off" },
+  },
+  {
+    files: ["scripts/browser/*.js"],
+    // Playwright CLI run-code files must contain one callable arrow expression.
+    rules: { "@typescript-eslint/no-unused-expressions": "off" },
   },
 );

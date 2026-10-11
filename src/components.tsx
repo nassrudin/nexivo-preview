@@ -55,7 +55,7 @@ export function Brand({ small = false }: { small?: boolean }) {
       aria-label="NEXIVO — beranda"
     >
       <span className="brand-mark">
-        <img src="/logo.jpg" alt="" width="1808" height="1024" />
+        <img src={import.meta.env.BASE_URL + "logo.jpg"} alt="" width="1808" height="1024" />
       </span>
       <span className="brand-name">
         NEXIVO<span>LEARN. CONNECT. GROW.</span>

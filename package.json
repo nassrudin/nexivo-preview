@@ -10,6 +10,7 @@
     "dev": "node --env-file-if-exists=.env --import tsx server/index.ts",
     "dev:ui": "vite --host 127.0.0.1",
     "build": "tsc --noEmit && vite build",
+    "build:pages": "tsc --noEmit && node --import tsx scripts/build-pages.ts",
     "start": "node --env-file-if-exists=.env --import tsx server/index.ts --production",
     "preview": "node --env-file-if-exists=.env --import tsx server/index.ts --preview",
     "lint": "eslint .",

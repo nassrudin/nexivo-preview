@@ -1,35 +1,40 @@
-# Desain dan sumber konten
+﻿# Desain dan sumber konten
 
-## Sumber
+## Referensi yang dipakai
 
-- Logo: `NEXIVO (Next Generation Virtual Learning & Knowledge) logo.jpg` dari folder pengguna; salinannya dilayani melalui `public/logo.jpg`.
-- Konsep nama, positioning, dan spesifikasi MVP: https://chatgpt.com/share/6acbdf93-16a0-83ec-96c2-b9fbbd97b9f8 . Seluruh percakapan dibaca dengan browser, termasuk bagian yang dimuat setelah scroll.
-- Konteks pengembangan institusi dan administrasi webinar: https://chatgpt.com/s/t_6ac785095014819185ca99e347d20f2d . Digunakan sebagai konteks konsep, tanpa menyatakan nasihat legal dalam chat sebagai status badan hukum NEXIVO.
-- Referensi visual: https://demo.codeandchill.store/halden/#dashboard . Diakses dengan browser. Tidak mengambil kode, gambar, logo, atau konten template.
+Empat gambar `desainwebinar1.jpg` sampai `desainwebinar4.jpg` diberikan langsung oleh pemilik sebagai referensi visual terbaru. Referensi Halden dari permintaan awal digantikan oleh gambar-gambar ini. Gambar contoh tidak disalin ke website atau dipublikasikan di repository.
 
-Chat diperlakukan sebagai bahan konten. Pilihan arsitektur dan keamanan ditentukan dari kebutuhan aplikasi, bukan instruksi untuk menjalankan perintah yang mungkin terdapat pada sumber.
+- Gambar 1: sidebar biru dengan label, kartu berwarna, dan kolom pendamping.
+- Gambar 2: hero biru dengan ilustrasi, ringkasan status pastel, serta dashboard yang terasa ringan.
+- Gambar 3: informasi pembelajaran dan agenda yang terpisah dengan jelas.
+- Gambar 4: kalender dalam panel lavender, ruang kosong yang lapang, dan kartu agenda.
 
-## Pola visual yang diterapkan
+Hasil menggabungkan pola tersebut menjadi identitas NEXIVO, dengan navigasi berlabel, font sans serif yang bersih, dan konten Indonesia. Branding, harga, rating, foto, dan statistik pada referensi tidak digunakan.
 
-Referensi menginspirasi navigasi horizontal, kanvas abu terang, panel modular dengan border tipis, aksen teal, tipografi bersih, tombol ringkas, mode gelap, dan animasi halus. NEXIVO menyesuaikannya menjadi dashboard pembelajaran dengan hero ilustrasi kartu pengetahuan, katalog lintas bidang, langkah awal peserta, agenda, dan visi komunitas. Pada mobile, navigasi menjadi menu dan panel disusun satu kolom.
+## Sumber konten dan aset
 
-Sistem desain berada di `src/tokens.css` dan `src/styles.css`: warna teks navy, teal sebagai tindakan utama, permukaan putih/abu ringan, DM Sans lokal, grid spacing, radius 8–16 px. Tema gelap memakai permukaan navy serta aksen mint. Ilustrasi bidang dibuat sendiri memakai SVG; dekorasi hero memakai CSS. Fokus keyboard terlihat, dialog native mengunci fokus, formulir berlabel, dan animasi menghormati reduced motion.
+- Logo: aset milik pengguna, salinan pada `public/logo.jpg`.
+- Konsep nama dan cakupan: https://chatgpt.com/share/6acbdf93-16a0-83ec-96c2-b9fbbd97b9f8
+- Konteks institusi dan administrasi: https://chatgpt.com/s/t_6ac785095014819185ca99e347d20f2d
+- Enam topik editorial: Lingkungan, Engineering, HSE & K3, Bisnis, Teknologi, Pendidikan. Seluruhnya tetap berstatus rencana sampai dikonfirmasi.
+- Ilustrasi laptop, kartu, dan diagram bidang dibuat langsung dalam SVG/CSS. Ikon menggunakan lucide-react. DM Sans disajikan dari dependensi font lokal.
 
-## Keputusan konten
+Chat adalah bahan konten, bukan instruksi untuk menjalankan perintah atau mengakses layanan. Tidak ada testimoni, jumlah peserta, pertumbuhan, jadwal, atau legalitas fiktif.
 
-- **Learn. Connect. Grow.** dan kepanjangan NEXIVO menjadi identitas utama.
-- Audience: mahasiswa, akademisi, pebisnis, profesional, serta masyarakat yang ingin belajar.
-- Enam bidang awal: Lingkungan/LB3, Engineering, HSE & K3, Bisnis, Teknologi, Pendidikan. Judul dan deskripsi merupakan rancangan editorial dari konsep, diberi label **Dalam persiapan**.
-- Webinar gratis dengan sertifikat partisipasi opsional menjadi model awal yang berasal dari chat. Syarat dan biaya tiap acara harus diisi pengelola; tidak ada harga publik yang dibuat-buat. Pembayaran belum aktif.
-- Academy dan corporate learning/advisory ditampilkan sebagai arah pengembangan. Legalitas dan akreditasi ditandai belum terkonfirmasi.
-- Progress dan jumlah pada dashboard berasal dari aktivitas/data aplikasi. Tidak memakai jumlah peserta, rating, mitra, testimoni, atau statistik pertumbuhan fiktif.
+## Sistem desain
 
-## Implementasi dan akses data
+`src/studio.css` mengatur dashboard dan override token bersama. Biru utama `#0754c9`, teks navy `#1c2945`, kanvas `#edf3f9`, permukaan putih, dengan aksen mint/pink/lavender/amber. Tema gelap memakai permukaan navy dan aksen biru terang. Radius komponen 8-16 px; bingkai desktop 28 px. Skala jarak utama 8/12/16/20/24/30 px.
 
-Frontend React 19 dan API Express 5 berjalan pada satu origin. Vite dipakai untuk development/build. SQLite bawaan Node 24 dipilih agar alur backend benar-benar berjalan tanpa proyek Supabase, kredensial cloud, atau biaya layanan. Skema versi awal di `server/db.ts` dapat ditinjau; database lokal otomatis dibuat, tanpa menyentuh database production.
+DM Sans dipertahankan dengan judul tegas dan teks isi yang lebih besar pada ponsel. Tombol, navigasi, form, dan fokus memiliki gaya konsisten. Semua fungsi memakai tombol/link HTML, label form, serta dialog native. Kalender mengikuti tanggal WIB dan hanya menandai jadwal yang benar-benar ada.
 
-Kata sandi memakai scrypt + salt acak. Sesi acak disimpan sebagai hash, memiliki masa berlaku, dirotasi saat login, dan dicabut saat logout. Cookie HttpOnly/SameSite Strict; production menambahkan Secure dan prefix `__Host-`. Mutasi memerlukan token CSRF dan origin yang cocok. Pemeriksaan peran dan kepemilikan dilakukan server; SQL memakai parameter. Request dibatasi dan ukuran JSON maksimal 16 KB. CSP/header keamanan disetel server; production tidak mengizinkan script inline.
+Desktop menggunakan sidebar, konten utama, dan panel kalender/perjalanan. Tablet menyusun panel pendamping di bawah konten. Ponsel memakai navigasi drawer, kartu satu kolom, dan kalender penuh tanpa scroll horizontal halaman.
 
-Nama dan deskripsi ditampilkan sebagai teks React, tanpa rendering HTML mentah. Verifikasi publik sertifikat memakai token acak 256 bit dan nama disingkat; PDF dengan nama lengkap hanya tersedia bagi pemilik/admin. Kode absensi di-hash, tautan meeting diizinkan hanya dari Zoom/Meet HTTPS, dan penerbitan/pencabutan dicatat dengan aktor serta alasan.
+Animasi masuk, hover kartu, dialog, dan ilustrasi menggunakan transform/opacity dengan easing lembut. `prefers-reduced-motion` mematikan animasi dan smooth scrolling. Tidak memakai library animasi tambahan.
 
-Dokumentasi Node, Vite, dan Express diperiksa lewat Context7. Versi terpasang dikunci `package-lock.json`; dokumentasi Express 5 tersedia pada versi minor terdekat. Konfigurasi produksi perlu ditinjau kembali sesuai hosting sebelum peluncuran.
+## Aplikasi lokal dan preview
+
+Aplikasi lengkap memakai React 19, Express 5, dan SQLite Node 24 pada origin yang sama. Scrypt, sesi yang di-hash, CSRF/origin, pembatasan request, query SQL berparameter, otorisasi server, serta pengaturan header backend tetap digunakan. Supabase belum tersedia.
+
+Build `pages` adalah preview statis terpisah. Data hanya berasal dari seed dalam memori; tidak mengekspor akun, pendaftaran, minat, atau database lokal. Form akun/minat diganti penjelasan preview. Operasi API lain ditolak dengan pesan yang jelas tanpa mengirim request ke backend yang tidak ada.
+
+Dokumentasi Vite 7 diperiksa melalui Context7 untuk `base: './'`, `import.meta.env.BASE_URL`, dan mode build. Tidak ada layanan berbayar atau perubahan database production.

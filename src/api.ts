@@ -1,3 +1,5 @@
+import { isDesignPreview } from "./config";
+
 let csrf = "";
 export class ApiError extends Error {
   constructor(
@@ -14,6 +16,26 @@ export async function api<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
+  if (isDesignPreview) {
+    if ((!options.method || options.method === "GET") && path === "/session")
+      return { user: null, csrf: "" } as T;
+    if ((!options.method || options.method === "GET") && path === "/events") {
+      const response = await fetch(
+        import.meta.env.BASE_URL + "preview-events.json",
+        { signal: options.signal },
+      );
+      if (!response.ok)
+        throw new ApiError(
+          "Topik preview belum dapat dimuat. Silakan coba lagi.",
+          response.status,
+        );
+      return response.json() as Promise<T>;
+    }
+    throw new ApiError(
+      "Fitur ini belum aktif pada preview desain. Akun, pendaftaran, dan verifikasi nyata membutuhkan backend NEXIVO.",
+      503,
+    );
+  }
   const response = await fetch("/api" + path, {
     ...options,
     credentials: "same-origin",
