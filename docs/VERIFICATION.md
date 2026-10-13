@@ -31,6 +31,8 @@ Website publik, pencarian/filter/katalog, keadaan kosong, dialog penjelasan prev
 
 Build memakai seed database dalam memori, tidak mengekspor akun, minat, pendaftaran, atau database lokal. Preview admin tidak membuka data atau kontrol manajemen yang memerlukan autentikasi.
 
+Alamat publik https://nassrudin.github.io/nexivo-preview/ telah diperiksa ulang dengan Chrome setelah publikasi: **35 pemeriksaan lulus**, sembilan scan axe bersih, dan seluruh aset berhasil dimuat dari subfolder repository. Tidak ada request API backend/mutasi, HTTP error, atau JavaScript error. Log lokal: `artifacts/interface-online-review.log`.
+
 ## Peninjauan visual
 
 Screenshot desktop dan ponsel untuk publik/peserta/admin telah diperiksa. Perbaikan mencakup orbit ilustrasi yang melampaui layar kecil, fokus tabel yang dapat digulir, keterbacaan, latar panel, serta fokus menu mobile. Artefak lokal `artifacts/nexivo-public-*`, `nexivo-participant-*`, `nexivo-management-*`, dan `nexivo-pages-public-*` diabaikan Git.
