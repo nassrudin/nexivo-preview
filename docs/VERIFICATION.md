@@ -1,64 +1,40 @@
-﻿# Hasil verifikasi dashboard dan preview
+# Verifikasi pemisahan website dan dashboard
 
-Diperiksa 12 Oktober 2026 (WIB), Windows, Node 24.21.0, Chrome melalui Playwright CLI. Catatan ini berlaku untuk redesign dari empat gambar konsep terbaru.
+Diperiksa 14 Oktober 2026 (WIB), Node 24.21.0, Windows, Chrome melalui Playwright CLI.
 
 ## Kode dan backend
 
-| Pemeriksaan | Hasil |
-| --- | --- |
-| ESLint | Lulus |
-| TypeScript strict | Lulus |
-| Tes HTTP/keamanan backend | 13 lulus, 0 gagal |
-| Build aplikasi lengkap | Lulus |
-| Build preview `pages` | Lulus |
-| Diff whitespace | Bersih |
+- ESLint dan TypeScript strict: lulus.
+- Build aplikasi lengkap dan build preview Pages: lulus.
+- Tes HTTP/keamanan: 13 lulus, 0 gagal. Validasi, autentikasi, CSRF/origin, peran/kepemilikan, kuota, absensi, sertifikat, rate limit, cookie, dan CSP tetap diperiksa.
+- Server development memakai WebSocket HMR pada port HTTP yang sama; handshake browser pada port 3014 terverifikasi. Uji bentrok startup sebelumnya mengonfirmasi exit 1 dengan pesan port yang jelas tanpa pesan siap yang keliru.
 
-Tes backend mencakup validasi, CSRF/origin, peran dan kepemilikan, hashing/sesi, isolasi bookmark, kuota bersamaan, pendaftaran ganda, tautan meeting, waktu absensi, evaluasi dan penerbitan sertifikat, akses PDF, verifikasi publik, pencabutan/audit, rate limit, cookie, dan CSP production. Database tes berada dalam memori.
+## Browser aplikasi lengkap
 
-## Browser aplikasi lokal
+`scripts/browser/review-dashboard.js`: **43 pemeriksaan lulus** pada database terisolasi `artifacts/interface-review.sqlite`, port 3014.
 
-`scripts/browser/review-dashboard.js`: **27 pemeriksaan berhasil**.
+- Website publik memakai navigasi horizontal, dashboard peserta memakai sidebar pembelajaran, dan dashboard admin memakai sidebar/manajemen terpisah.
+- Login peserta mengarah ke `#dashboard`; admin ke `#admin`. Kembali ke website publik mempertahankan sesi, logout mengakhiri sesi dan kembali ke website.
+- Tamu dan peserta tidak dapat melihat tabel admin; request admin oleh peserta ditolak server dengan HTTP 403 yang memang diharapkan.
+- Filter dari bidang publik membuka katalog yang sesuai. Verifikasi publik tidak menampilkan daftar sertifikat pribadi.
+- Menu webinar, peserta/sertifikat, dan minat membuka view tersendiri. Form pembuatan webinar dan keadaan kosong nyata diperiksa.
+- Navigasi keyboard, fokus setelah perpindahan layout, menu mobile, penguncian Tab dalam drawer, Escape/pengembalian fokus, serta reduced motion diperiksa.
+- Website publik, dashboard peserta, dan admin diuji pada 320, 390, 768, 1024, 1440 px: tidak ada overflow horizontal halaman. Tabel admin dapat digulir dan difokuskan lewat keyboard.
+- **10 scan axe bersih**: publik terang/gelap/ponsel, peserta terang/gelap, admin terang/gelap/ponsel, dialog pembuatan, dan menu mobile terbuka. WCAG 2 A/AA, 2.1 AA, dan 2.2 AA.
+- Tidak ada JavaScript error yang tidak tertangani atau request jaringan gagal pada run final.
 
-- Pencarian, filter bidang, detail program, navigasi bulan/tanggal, reset kalender.
-- Validasi login kosong dan pesan kegagalan login. HTTP 401 pada skenario login salah memang diharapkan.
-- Skip link, fokus setelah dialog, menu ponsel, Escape, dan navigasi.
-- Tema terang/gelap; reduced motion menghentikan animasi.
-- Lebar 320, 390, 768, 1024, 1440 px tanpa overflow horizontal halaman.
-- Axe WCAG 2 A/AA, 2.1 AA, dan 2.2 AA: **0 pelanggaran otomatis** pada beranda desktop, gelap, dan ponsel.
-- Tidak ada JavaScript error yang tidak tertangani atau request gagal pada run final.
+## Preview statis
 
-## Browser preview statis
+`scripts/browser/review-preview.js`: **35 pemeriksaan lulus**, **9 scan axe bersih** pada build lokal port 3002.
 
-`scripts/browser/review-preview.js`: **22 pemeriksaan berhasil** pada build lokal port 3002.
+Website publik, pencarian/filter/katalog, keadaan kosong, dialog penjelasan preview, verifikasi, dashboard peserta, dan permission state admin diperiksa. Tiga area diuji pada lima ukuran layar. Logo dan aset menggunakan base relatif. Tidak ada request API backend, mutasi, pengumpulan formulir data pribadi, HTTP error, runtime error, atau request gagal.
 
-- Penanda preview, enam topik seed, logo/aset, pencarian, katalog, empty state, dan dialog.
-- Form akun/minat tidak mengumpulkan data pribadi. CTA dialog bekerja juga ketika berada pada route yang sama.
-- Lima ukuran layar tanpa overflow horizontal.
-- Tidak ada request `/api`, mutasi server, HTTP error, JavaScript error, atau request gagal.
-- Lima scan axe pada katalog, Belajarku, Sertifikat, Tentang, dan Penggunaan data: **0 pelanggaran otomatis**. Animasi dihentikan saat scan untuk menilai warna akhir yang benar.
+Build memakai seed database dalam memori, tidak mengekspor akun, minat, pendaftaran, atau database lokal. Preview admin tidak membuka data atau kontrol manajemen yang memerlukan autentikasi.
 
-Screenshot desktop, ponsel, tablet, dan gelap telah diperiksa secara visual. Perbaikan mencakup kontras angka/panel, label pencarian pada mobile/tablet, teks navigasi, dan penutupan dialog preview pada route yang sama.
+## Peninjauan visual
 
-## Pengukuran lokal
+Screenshot desktop dan ponsel untuk publik/peserta/admin telah diperiksa. Perbaikan mencakup orbit ilustrasi yang melampaui layar kecil, fokus tabel yang dapat digulir, keterbacaan, latar panel, serta fokus menu mobile. Artefak lokal `artifacts/nexivo-public-*`, `nexivo-participant-*`, `nexivo-management-*`, dan `nexivo-pages-public-*` diabaikan Git.
 
-Satu run Chrome desktop 1440 x 1000, build preview teroptimasi, cache dikosongkan, tanpa throttling CPU/network, setelah animasi masuk selesai:
+## Batas pemeriksaan
 
-| Pengamatan | Hasil |
-| --- | --- |
-| LCP tercatat | 48 ms |
-| Jumlah layout shift tanpa input | 0,067 |
-| Transfer resource | sekitar 166 KB |
-| JavaScript preview | sekitar 294 KB, 90 KB gzip |
-| CSS | sekitar 70 KB, 15 KB gzip |
-
-Ini pengamatan singkat pada localhost, bukan skor Lighthouse, Core Web Vitals lapangan, atau tolok ukur perangkat pengguna. Jaringan dan perangkat nyata belum diukur.
-
-## Publikasi dan batas pemeriksaan
-
-Preview menggunakan GitHub Pages pada branch `gh-pages`; source aplikasi lengkap pada `main`. Build mengekspor seed dari SQLite dalam memori dan tidak mengunggah database lokal, `.env`, akun, atau artefak tes.
-
-Alamat publik https://nassrudin.github.io/nexivo-preview/ telah dibuka dengan Chrome dan diperiksa ulang menggunakan skrip preview yang sama: **22 pemeriksaan lulus**, lima scan axe bersih, seluruh aset berhasil dimuat dari subfolder repository, dan tidak ada request backend/mutasi, HTTP error, atau JavaScript error. Log lokal: `artifacts/pages-online-review.log`.
-
-Publikasi backend, Supabase, email, pembayaran, dan database production belum dilakukan. Pembaca layar manual, Safari/iOS, perangkat fisik, beban trafik, serta audit keamanan menyeluruh belum diuji. Hasil axe bukan sertifikasi aksesibilitas; tes lokal bukan jaminan keamanan menyeluruh.
-
-Artefak lokal diabaikan Git: `artifacts/dashboard-review.log`, `pages-review.log`, `pages-performance.log`, serta screenshot `nexivo-studio-*` dan `nexivo-pages-*`.
+Tidak mengubah database pengguna atau production. Backend/email/pembayaran/Supabase belum dipublikasikan. Safari/iOS, pembaca layar manual, perangkat fisik, beban trafik, audit keamanan menyeluruh, dan performa lapangan belum diuji. Hasil axe bukan sertifikasi aksesibilitas. Angka performa dari desain sebelumnya tidak digunakan sebagai hasil versi ini.

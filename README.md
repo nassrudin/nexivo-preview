@@ -1,10 +1,23 @@
 ﻿# NEXIVO
 
-Website webinar **Next Generation Virtual Learning & Knowledge**. Dashboard React + TypeScript + Vite dengan backend Express dan SQLite lokal.
+Website webinar **Next Generation Virtual Learning & Knowledge**. Website publik, dashboard peserta, dan dashboard pengelola terpisah, memakai React + TypeScript + Vite dengan backend Express dan SQLite lokal.
 
 **Preview online:** https://nassrudin.github.io/nexivo-preview/
 
 Preview GitHub Pages hanya untuk meninjau desain dan enam topik rencana. Pembuatan akun, bookmark, penyimpanan minat, pendaftaran, administrasi, dan sertifikat nyata memerlukan backend. Formulir data pribadi tidak ditampilkan pada preview statis.
+
+## Halaman dan akses
+
+| Area | Alamat lokal | Fungsi |
+| --- | --- | --- |
+| Website publik | `http://127.0.0.1:3000/#beranda` | Pengenalan NEXIVO, bidang, katalog webinar, dan informasi |
+| Verifikasi publik | `http://127.0.0.1:3000/#verifikasi` | Memeriksa status dokumen tanpa membuka sertifikat pribadi |
+| Dashboard peserta | `http://127.0.0.1:3000/#dashboard` | Ringkasan belajar, simpanan, pendaftaran, dan sertifikat |
+| Dashboard pengelola | `http://127.0.0.1:3000/#admin` | Ringkasan operasional dan manajemen kegiatan |
+
+Login dari website publik mengarahkan peserta ke dashboard belajar dan admin ke area pengelola. Menu pengelola memiliki halaman `#admin/webinar`, `#admin/peserta`, dan `#admin/minat`. Link **Website publik** kembali ke halaman depan tanpa mengakhiri sesi. **Keluar akun** mengakhiri sesi dan kembali ke website publik. Otorisasi admin tetap diperiksa pada server.
+
+Preview GitHub Pages menampilkan website publik dan demo dashboard peserta di `#dashboard`. Data admin tetap memerlukan login dan backend lokal; preview tidak membuka akses pengelolaan atau mengekspor data pengguna.
 
 ## Menjalankan aplikasi lengkap
 
@@ -61,15 +74,26 @@ npm.cmd run build
 npm.cmd run build:pages
 ```
 
-Tes HTTP menggunakan database dalam memori. Setelah server lokal berjalan pada port 3000, verifikasi dashboard dengan Playwright CLI:
+Tes HTTP menggunakan database dalam memori. Pemeriksaan browser memakai akun peserta/admin contoh pada database terisolasi. Siapkan dan jalankan di terminal tersendiri:
 
 ```powershell
-New-Item -ItemType Directory -Force artifacts | Out-Null
-playwright-cli.cmd -s=nexivo-review open http://127.0.0.1:3000 --browser=chrome
-playwright-cli.cmd -s=nexivo-review run-code --filename=scripts/browser/review-dashboard.js
+node --import tsx scripts/prepare-interface-review.ts
+$env:PORT = '3014'
+$env:APP_URL = 'http://127.0.0.1:3014'
+$env:DATABASE_PATH = './artifacts/interface-review.sqlite'
+npm.cmd run dev
 ```
 
-Pemeriksaan browser mencakup pencarian, filter, detail, kalender, form invalid/login gagal, keyboard/fokus, tema, reduced motion, lima ukuran layar, console/network, serta axe. Jalankan pada database review dengan enam topik awal; tidak ada pembuatan akun atau acara nyata oleh skrip dashboard. Skrip preview statis dapat dijalankan dengan `scripts/browser/review-preview.js` pada server port 3002.
+Di terminal kedua:
+
+```powershell
+playwright-cli.cmd -s=nexivo-interface open http://127.0.0.1:3014 --browser=chrome
+playwright-cli.cmd -s=nexivo-interface run-code --filename=scripts/browser/review-dashboard.js
+```
+
+Skrip memeriksa pemisahan layout, redirect login sesuai peran, pembatasan admin, halaman manajemen, navigasi, fokus/menu keyboard, mode gelap, reduced motion, lima ukuran layar, console/network, serta axe. Gunakan database review ini, bukan database pengguna nyata. Untuk aplikasi utama, gunakan terminal baru agar environment review tidak terbawa.
+
+Skrip `scripts/browser/review-preview.js` memeriksa preview statis pada server port 3002 atau alamat GitHub Pages yang sedang terbuka. Preview tidak mengirim request backend atau mutasi data.
 
 Lihat [keputusan desain](docs/DESIGN.md) dan [hasil verifikasi](docs/VERIFICATION.md).
 

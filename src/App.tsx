@@ -9,15 +9,10 @@ import {
   ArrowRight,
   ArrowUpRight,
   Search,
-  Sun,
-  Moon,
-  Menu,
   X,
-  LayoutDashboard,
   BookOpen,
   Bookmark,
   Award,
-  Bell,
   ChevronRight,
   CalendarDays,
   Clock3,
@@ -35,7 +30,6 @@ import {
 } from "lucide-react";
 import { api, body, errorMessage, setCsrf } from "./api";
 import {
-  Brand,
   categories,
   CategoryIcon,
   categoryClasses,
@@ -52,6 +46,9 @@ import AuthForm from "./AuthForm";
 import Admin from "./Admin";
 import Dashboard from "./Dashboard";
 import { isDesignPreview } from "./config";
+import PublicLayout from "./layouts/PublicLayout";
+import WorkspaceLayout from "./layouts/WorkspaceLayout";
+import PublicHome from "./public/PublicHome";
 
 type DialogState =
   | { type: "auth" | "interest" | "search" | "profile" | "updates" }
@@ -59,12 +56,20 @@ type DialogState =
   | { type: "attendance" | "evaluation"; registration: Registration }
   | { type: "meeting"; url: string }
   | null;
-const nav = [
-  { id: "beranda", text: "Beranda", icon: LayoutDashboard },
-  { id: "program", text: "Webinar", icon: BookOpen },
-  { id: "belajarku", text: "Belajarku", icon: Bookmark },
-  { id: "sertifikat", text: "Sertifikat", icon: Award },
-];
+const pageTitles: Record<string, string> = {
+  beranda: "Beranda",
+  program: "Webinar",
+  dashboard: "Dashboard peserta",
+  belajarku: "Belajar saya",
+  sertifikat: "Sertifikat saya",
+  tentang: "Tentang NEXIVO",
+  privasi: "Penggunaan data",
+  verifikasi: "Verifikasi sertifikat",
+  admin: "Dashboard pengelola",
+  "admin/webinar": "Kelola webinar",
+  "admin/peserta": "Peserta & sertifikat",
+  "admin/minat": "Minat program",
+};
 const descriptions: Record<string, [string, string, string]> = {
   program: [
     "TEMUKAN PERSPEKTIF BARU",
@@ -81,10 +86,21 @@ const descriptions: Record<string, [string, string, string]> = {
     "Partisipasi yang dapat ditelusuri.",
     "Kelola sertifikatmu atau periksa keaslian dokumen melalui kode verifikasi.",
   ],
+  verifikasi: [
+    "VERIFIKASI DOKUMEN",
+    "Periksa keaslian sertifikat.",
+    "Gunakan kode unik atau tautan pada QR sertifikat untuk melihat status dokumen partisipasi NEXIVO.",
+  ],
 };
 const getRoute = () => window.location.hash.slice(1) || "beranda";
 export default function App() {
   const [route, setRoute] = useState(getRoute);
+  const previousRoute = useRef(route);
+  useEffect(() => {
+    if (previousRoute.current === route) return;
+    previousRoute.current = route;
+    document.getElementById("main")?.focus({ preventScroll: true });
+  }, [route]);
   const [user, setUser] = useState<User | null>(null);
   const [currentTime, setCurrentTime] = useState(Date.now);
   useEffect(() => {
@@ -104,25 +120,9 @@ export default function App() {
       return "light";
     }
   });
-  const [mobileMenu, setMobileMenu] = useState(false);
-  useEffect(() => {
-    if (!mobileMenu) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    const closeWithEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setMobileMenu(false);
-        document.querySelector<HTMLButtonElement>(".mobile-toggle")?.focus();
-      }
-    };
-    window.addEventListener("keydown", closeWithEscape);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", closeWithEscape);
-    };
-  }, [mobileMenu]);
   const [filter, setFilter] = useState("Semua bidang");
   const [query, setQuery] = useState("");
+  const pendingCategory = useRef<string | null>(null);
   const [savedTab, setSavedTab] = useState(false);
   const [toast, setToast] = useState("");
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -179,9 +179,9 @@ export default function App() {
     const listener = () => {
       setRoute(getRoute());
       setDialog(null);
-      setMobileMenu(false);
       setQuery("");
-      setFilter("Semua bidang");
+      setFilter(pendingCategory.current || "Semua bidang");
+      pendingCategory.current = null;
       window.scrollTo({ top: 0, behavior: "instant" });
       document.getElementById("main")?.focus({ preventScroll: true });
     };
@@ -213,7 +213,7 @@ export default function App() {
     [],
   );
   useEffect(() => {
-    document.title = `${route.startsWith("verifikasi") ? "Verifikasi sertifikat" : nav.find((n) => n.id === route)?.text || (route === "tentang" ? "Tentang" : "NEXIVO")} · NEXIVO`;
+    document.title = `${route.startsWith("verifikasi") ? "Verifikasi sertifikat" : pageTitles[route] || "NEXIVO"} · NEXIVO`;
   }, [route]);
   const verify = useCallback(async (token: string) => {
     setVerifyBusy(true);
@@ -394,6 +394,34 @@ export default function App() {
     </>
   );
 
+  const isWorkspace = [
+    "dashboard",
+    "belajarku",
+    "sertifikat",
+    "admin",
+    "admin/webinar",
+    "admin/peserta",
+    "admin/minat",
+  ].includes(route);
+  const Layout = isWorkspace ? WorkspaceLayout : PublicLayout;
+  async function logout() {
+    try {
+      const result = await api<{ csrf: string }>("/auth/logout", {
+        method: "POST",
+        body: "{}",
+      });
+      setCsrf(result.csrf);
+      setUser(null);
+      setBookmarks([]);
+      setRegistrations([]);
+      setDialog(null);
+      window.location.hash = "beranda";
+      notify("Kamu sudah keluar dari akun.");
+    } catch (error) {
+      notify(errorMessage(error));
+    }
+  }
+
   return (
     <>
       <a
@@ -406,217 +434,60 @@ export default function App() {
       >
         Lewati ke konten
       </a>
-      <div className="app-shell">
-        {mobileMenu && (
-          <button
-            className="navigation-backdrop"
-            tabIndex={-1}
-            aria-label="Tutup navigasi"
-            onClick={() => setMobileMenu(false)}
-          />
-        )}
-        <aside
-          id="app-navigation"
-          className={`app-sidebar ${mobileMenu ? "is-open" : ""}`}
-          onClick={(event) => {
-            if ((event.target as Element).closest("a")) {
-              setMobileMenu(false);
-              document.getElementById("main")?.focus({ preventScroll: true });
-            }
-          }}
-        >
-          <div className="sidebar-brand">
-            <Brand />
-            <button
-              className="sidebar-close icon-button"
-              aria-label="Tutup menu"
-              onClick={() => {
-                setMobileMenu(false);
-                document
-                  .querySelector<HTMLButtonElement>(".mobile-toggle")
-                  ?.focus();
-              }}
-            >
-              <X size={21} />
-            </button>
-          </div>
-          <span className="sidebar-label">RUANG BELAJARMU</span>
-          <nav aria-label="Navigasi utama" className="sidebar-nav">
-            {nav.map((item) => (
-              <a
-                key={item.id}
-                href={"#" + item.id}
-                className={route === item.id ? "active" : ""}
-                aria-current={route === item.id ? "page" : undefined}
-                onClick={() => setMobileMenu(false)}
-              >
-                <item.icon size={19} />
-                <span>{item.text}</span>
-                {item.id === "program" && (
-                  <span className="nav-count">{events.length}</span>
-                )}
-              </a>
-            ))}
-            {user?.role === "admin" && (
-              <a
-                href="#admin"
-                aria-current={route === "admin" ? "page" : undefined}
-                className={route === "admin" ? "active" : ""}
-              >
-                <ShieldCheck size={19} />
-                <span>Pengelola</span>
-              </a>
-            )}
-          </nav>
-          <div className="sidebar-secondary">
-            <span className="sidebar-label">TENTANG KAMI</span>
-            <a
-              href="#tentang"
-              aria-current={route === "tentang" ? "page" : undefined}
-            >
-              <CircleHelp size={19} />
-              Kenali NEXIVO
-            </a>
-            <a
-              href="#privasi"
-              aria-current={route === "privasi" ? "page" : undefined}
-            >
-              <ShieldCheck size={19} />
-              Penggunaan data
-            </a>
-          </div>
-          <div className="sidebar-invitation">
-            <span className="sidebar-book" aria-hidden="true">
-              <BookOpen size={32} strokeWidth={1.5} />
-              <span>✦</span>
-            </span>
-            <h2>
-              Ruang untuk
-              <br />
-              terus bertumbuh.
-            </h2>
-            <p>Satu wawasan baru bisa membuka banyak peluang.</p>
-            <button onClick={() => open({ type: "interest" })}>
-              Temukan minatmu <ArrowUpRight size={16} />
-            </button>
-          </div>
-          <div className="sidebar-signoff">
-            <span />
-            <p>
-              Belajar. Terhubung.
-              <br />
-              Bertumbuh.
-            </p>
-          </div>
-        </aside>
-        <div className="app-workspace">
-          <header className="workspace-header">
-            <div className="mobile-brand">
-              <button
-                className="icon-button mobile-toggle"
-                aria-label={mobileMenu ? "Tutup navigasi" : "Buka navigasi"}
-                aria-expanded={mobileMenu}
-                aria-controls="app-navigation"
-                onClick={() => setMobileMenu(!mobileMenu)}
-              >
-                {mobileMenu ? <X size={22} /> : <Menu size={22} />}
-              </button>
-              <Brand small />
+      <Layout
+        route={route}
+        user={user}
+        theme={theme}
+        preview={isDesignPreview}
+        onTheme={() => setTheme(theme === "light" ? "dark" : "light")}
+        onAuth={() => open({ type: "auth" })}
+        onSearch={() => open({ type: "search" })}
+        onUpdates={() => open({ type: "updates" })}
+        onProfile={() => open({ type: "profile" })}
+        onLogout={() => void logout()}
+      >
+        <main id="main" tabIndex={-1}>
+          {loading ? (
+            <div className="loading-page">
+              <LoaderCircle className="spin" />
+              <h1>Menyiapkan ruang belajarmu…</h1>
             </div>
-            <button
-              className="search-trigger"
-              onClick={() => open({ type: "search" })}
-              aria-label="Cari program"
+          ) : loadError ? (
+            <StateCard
+              title="Ruang belajar belum dapat dimuat"
+              headingLevel={1}
+              action={
+                <button
+                  className="button primary"
+                  onClick={() => {
+                    setLoading(true);
+                    void load();
+                  }}
+                >
+                  Coba lagi
+                </button>
+              }
             >
-              <Search size={19} />
-              <span>Cari topik yang ingin kamu pelajari...</span>
-              <kbd>Ctrl K</kbd>
-            </button>
-            <div className="header-tools">
-              <button
-                className="icon-button theme-button"
-                onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-                aria-label={
-                  theme === "light"
-                    ? "Aktifkan tema gelap"
-                    : "Aktifkan tema terang"
-                }
-              >
-                {theme === "light" ? <Moon size={19} /> : <Sun size={19} />}
-              </button>
-              <button
-                className="icon-button notification-button"
-                onClick={() => open({ type: "updates" })}
-                aria-label="Informasi kegiatan"
-              >
-                <Bell size={19} />
-              </button>
-              <span className="tool-divider" />
-              {user ? (
-                <button
-                  className="profile-trigger"
-                  onClick={() => open({ type: "profile" })}
-                  aria-label={"Profil " + user.name}
-                >
-                  <span className="avatar">
-                    {user.name
-                      .split(" ")
-                      .map((n) => n[0])
-                      .slice(0, 2)
-                      .join("")
-                      .toUpperCase()}
-                  </span>
-                  <span>{user.name.split(" ")[0]}</span>
-                  <ChevronRight size={15} />
-                </button>
-              ) : (
-                <button
-                  className="button login-button"
-                  onClick={() => open({ type: "auth" })}
-                >
-                  <span className="guest-avatar">
-                    <UserRound size={18} />
-                  </span>
-                  Masuk <ChevronRight size={15} />
-                </button>
+              {loadError}
+            </StateCard>
+          ) : (
+            <>
+              {route === "beranda" && (
+                <PublicHome
+                  events={events}
+                  currentTime={currentTime}
+                  bookmarks={bookmarks}
+                  onDetail={(event) => open({ type: "detail", event })}
+                  onSave={(event) => void save(event)}
+                  onInterest={() => open({ type: "interest" })}
+                  onCategory={(category) => {
+                    pendingCategory.current = category;
+                    window.location.hash = "program";
+                  }}
+                />
               )}
-            </div>
-          </header>
-          {isDesignPreview && (
-            <div className="preview-notice">
-              <span>PREVIEW DESAIN</span>
-              <p>
-                Jelajahi tampilan dan topik rencana. Akun dan pendaftaran belum
-                aktif pada preview ini.
-              </p>
-            </div>
-          )}
-          <main id="main" tabIndex={-1}>
-            {loading ? (
-              <div className="loading-page">
-                <LoaderCircle className="spin" />
-                <h1>Menyiapkan ruang belajarmu…</h1>
-              </div>
-            ) : loadError ? (
-              <StateCard
-                title="Ruang belajar belum dapat dimuat"
-                action={
-                  <button
-                    className="button primary"
-                    onClick={() => {
-                      setLoading(true);
-                      void load();
-                    }}
-                  >
-                    Coba lagi
-                  </button>
-                }
-              >
-                {loadError}
-              </StateCard>
-            ) : (
-              <>
-                {route === "beranda" && (
+              {route === "dashboard" &&
+                (user || isDesignPreview ? (
                   <Dashboard
                     user={user}
                     events={events}
@@ -628,312 +499,332 @@ export default function App() {
                     onAuth={() => open({ type: "auth" })}
                     onDetail={(event) => open({ type: "detail", event })}
                   />
-                )}
-                {route === "program" && (
-                  <>
-                    <PageIntro content={descriptions.program} />
-                    <section className="catalog-toolbar">
-                      <label className="catalog-search">
-                        <Search size={18} />
-                        <input
-                          type="search"
-                          aria-label="Cari di katalog program"
-                          value={query}
-                          onChange={(e) => setQuery(e.target.value)}
-                          placeholder="Cari topik, bidang, atau narasumber…"
-                        />
-                      </label>
-                      <span>{visibleEvents.length} program eksplorasi</span>
-                    </section>
-                    <div
-                      className="category-filters"
-                      role="group"
-                      aria-label="Filter bidang"
-                    >
-                      {["Semua bidang", ...categories].map((c) => (
-                        <button
-                          key={c}
-                          className={filter === c ? "active" : ""}
-                          aria-pressed={filter === c}
-                          onClick={() => setFilter(c)}
-                        >
-                          {c}
-                        </button>
-                      ))}
-                    </div>
-                    {visibleEvents.length ? (
-                      renderPrograms(visibleEvents)
-                    ) : (
-                      <StateCard
-                        title="Belum menemukan yang kamu cari"
-                        action={
-                          <button
-                            className="button secondary"
-                            onClick={() => {
-                              setQuery("");
-                              setFilter("Semua bidang");
-                            }}
-                          >
-                            Reset pencarian
-                          </button>
-                        }
-                        icon={<Search size={28} />}
-                      >
-                        Coba kata kunci lain atau jelajahi semua bidang.
-                      </StateCard>
-                    )}
-                    <div className="catalog-note">
-                      <Clock3 size={17} />
-                      <p>
-                        Program dalam persiapan merupakan arah topik NEXIVO.
-                        Jadwal, narasumber, dan ketentuan final akan diumumkan
-                        sebelum pendaftaran dibuka.
-                      </p>
+                ) : (
+                  <StateCard
+                    title="Masuk ke dashboard peserta"
+                    headingLevel={1}
+                    action={
                       <button
-                        className="text-link"
-                        onClick={() => open({ type: "interest" })}
+                        className="button primary"
+                        onClick={() => open({ type: "auth" })}
                       >
-                        Catat minat saya
-                        <ArrowRight size={16} />
+                        Masuk / buat akun <ArrowRight size={16} />
                       </button>
-                    </div>
-                  </>
-                )}
-                {route === "belajarku" && (
-                  <>
-                    <PageIntro content={descriptions.belajarku} />
-                    {!user ? (
-                      <StateCard
-                        title="Ruang belajar ini menunggumu"
-                        action={
-                          <button
-                            className="button primary"
-                            onClick={() => open({ type: "auth" })}
-                          >
-                            Masuk / buat akun
-                            <ArrowRight size={16} />
-                          </button>
-                        }
+                    }
+                    icon={<BookOpen size={28} />}
+                  >
+                    Simpan topik, kelola pendaftaran, dan lanjutkan perjalanan
+                    belajarmu di satu tempat.
+                  </StateCard>
+                ))}
+              {route === "program" && (
+                <>
+                  <PageIntro content={descriptions.program} />
+                  <section className="catalog-toolbar">
+                    <label className="catalog-search">
+                      <Search size={18} />
+                      <input
+                        type="search"
+                        aria-label="Cari di katalog program"
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        placeholder="Cari topik, bidang, atau narasumber…"
+                      />
+                    </label>
+                    <span>{visibleEvents.length} program eksplorasi</span>
+                  </section>
+                  <div
+                    className="category-filters"
+                    role="group"
+                    aria-label="Filter bidang"
+                  >
+                    {["Semua bidang", ...categories].map((c) => (
+                      <button
+                        key={c}
+                        className={filter === c ? "active" : ""}
+                        aria-pressed={filter === c}
+                        onClick={() => setFilter(c)}
                       >
-                        Masuk untuk melihat pendaftaran dan program yang kamu
-                        simpan.
-                      </StateCard>
-                    ) : (
-                      <>
-                        <div className="personal-tabs">
-                          <button
-                            className={!savedTab ? "active" : ""}
-                            onClick={() => setSavedTab(false)}
-                          >
-                            Webinar saya <span>{registrations.length}</span>
-                          </button>
-                          <button
-                            className={savedTab ? "active" : ""}
-                            onClick={() => setSavedTab(true)}
-                          >
-                            Program tersimpan <span>{bookmarks.length}</span>
-                          </button>
-                        </div>
-                        {savedTab ? (
-                          bookmarks.length ? (
-                            renderPrograms(
-                              events.filter((e) => bookmarks.includes(e.id)),
-                            )
-                          ) : (
-                            <StateCard
-                              title="Simpan ide untuk langkah berikutnya"
-                              action={
-                                <a className="button primary" href="#program">
-                                  Jelajahi program
-                                  <ArrowRight size={16} />
-                                </a>
-                              }
-                            >
-                              Tekan ikon bookmark pada program yang ingin kamu
-                              ikuti.
-                            </StateCard>
+                        {c}
+                      </button>
+                    ))}
+                  </div>
+                  {visibleEvents.length ? (
+                    renderPrograms(visibleEvents)
+                  ) : (
+                    <StateCard
+                      title="Belum menemukan yang kamu cari"
+                      action={
+                        <button
+                          className="button secondary"
+                          onClick={() => {
+                            setQuery("");
+                            setFilter("Semua bidang");
+                          }}
+                        >
+                          Reset pencarian
+                        </button>
+                      }
+                      icon={<Search size={28} />}
+                    >
+                      Coba kata kunci lain atau jelajahi semua bidang.
+                    </StateCard>
+                  )}
+                  <div className="catalog-note">
+                    <Clock3 size={17} />
+                    <p>
+                      Program dalam persiapan merupakan arah topik NEXIVO.
+                      Jadwal, narasumber, dan ketentuan final akan diumumkan
+                      sebelum pendaftaran dibuka.
+                    </p>
+                    <button
+                      className="text-link"
+                      onClick={() => open({ type: "interest" })}
+                    >
+                      Catat minat saya
+                      <ArrowRight size={16} />
+                    </button>
+                  </div>
+                </>
+              )}
+              {route === "belajarku" && (
+                <>
+                  <PageIntro content={descriptions.belajarku} />
+                  {!user ? (
+                    <StateCard
+                      title="Ruang belajar ini menunggumu"
+                      action={
+                        <button
+                          className="button primary"
+                          onClick={() => open({ type: "auth" })}
+                        >
+                          Masuk / buat akun
+                          <ArrowRight size={16} />
+                        </button>
+                      }
+                    >
+                      Masuk untuk melihat pendaftaran dan program yang kamu
+                      simpan.
+                    </StateCard>
+                  ) : (
+                    <>
+                      <div className="personal-tabs">
+                        <button
+                          className={!savedTab ? "active" : ""}
+                          onClick={() => setSavedTab(false)}
+                        >
+                          Webinar saya <span>{registrations.length}</span>
+                        </button>
+                        <button
+                          className={savedTab ? "active" : ""}
+                          onClick={() => setSavedTab(true)}
+                        >
+                          Program tersimpan <span>{bookmarks.length}</span>
+                        </button>
+                      </div>
+                      {savedTab ? (
+                        bookmarks.length ? (
+                          renderPrograms(
+                            events.filter((e) => bookmarks.includes(e.id)),
                           )
-                        ) : registrations.length ? (
-                          <div className="registration-list">
-                            {registrations.map((r) => (
-                              <article
-                                className="panel registration-card"
-                                key={r.id}
+                        ) : (
+                          <StateCard
+                            title="Simpan ide untuk langkah berikutnya"
+                            action={
+                              <a className="button primary" href="#program">
+                                Jelajahi program
+                                <ArrowRight size={16} />
+                              </a>
+                            }
+                          >
+                            Tekan ikon bookmark pada program yang ingin kamu
+                            ikuti.
+                          </StateCard>
+                        )
+                      ) : registrations.length ? (
+                        <div className="registration-list">
+                          {registrations.map((r) => (
+                            <article
+                              className="panel registration-card"
+                              key={r.id}
+                            >
+                              <div
+                                className={
+                                  "registration-art " +
+                                  categoryClasses[r.category]
+                                }
                               >
-                                <div
-                                  className={
-                                    "registration-art " +
-                                    categoryClasses[r.category]
-                                  }
+                                <CategoryIcon category={r.category} size={32} />
+                              </div>
+                              <div className="registration-copy">
+                                <span className="eyebrow">{r.category}</span>
+                                <h2>{r.title}</h2>
+                                <p>
+                                  {r.startsAt &&
+                                    `${formatDate(r.startsAt, true)} · ${formatTime(r.startsAt)}`}
+                                </p>
+                                <div className="registration-status">
+                                  <span>
+                                    {r.checkedOutAt
+                                      ? "Absensi selesai"
+                                      : r.checkedInAt
+                                        ? "Absensi masuk tercatat"
+                                        : "Absensi belum tercatat"}
+                                  </span>
+                                  <span>
+                                    {r.evaluated
+                                      ? "Evaluasi selesai"
+                                      : "Evaluasi belum selesai"}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="registration-actions">
+                                <button
+                                  className="button primary small"
+                                  onClick={async () => {
+                                    try {
+                                      const result = await api<{
+                                        url: string;
+                                      }>("/registrations/" + r.id + "/meeting");
+                                      open({
+                                        type: "meeting",
+                                        url: result.url,
+                                      });
+                                    } catch (err) {
+                                      notify(errorMessage(err));
+                                    }
+                                  }}
                                 >
-                                  <CategoryIcon
-                                    category={r.category}
-                                    size={32}
-                                  />
-                                </div>
-                                <div className="registration-copy">
-                                  <span className="eyebrow">{r.category}</span>
-                                  <h2>{r.title}</h2>
-                                  <p>
-                                    {r.startsAt &&
-                                      `${formatDate(r.startsAt, true)} · ${formatTime(r.startsAt)}`}
-                                  </p>
-                                  <div className="registration-status">
-                                    <span>
-                                      {r.checkedOutAt
-                                        ? "Absensi selesai"
-                                        : r.checkedInAt
-                                          ? "Absensi masuk tercatat"
-                                          : "Absensi belum tercatat"}
-                                    </span>
-                                    <span>
-                                      {r.evaluated
-                                        ? "Evaluasi selesai"
-                                        : "Evaluasi belum selesai"}
-                                    </span>
-                                  </div>
-                                </div>
-                                <div className="registration-actions">
+                                  Ruang webinar
+                                  <ExternalLink size={14} />
+                                </button>
+                                {!r.checkedInAt ? (
                                   <button
-                                    className="button primary small"
+                                    className="button secondary small"
+                                    onClick={() =>
+                                      open({
+                                        type: "attendance",
+                                        registration: r,
+                                      })
+                                    }
+                                  >
+                                    Absensi masuk
+                                  </button>
+                                ) : !r.checkedOutAt ? (
+                                  <button
+                                    className="button secondary small"
                                     onClick={async () => {
                                       try {
-                                        const result = await api<{
-                                          url: string;
-                                        }>(
-                                          "/registrations/" + r.id + "/meeting",
+                                        await api(
+                                          "/registrations/" +
+                                            r.id +
+                                            "/check-out",
+                                          { method: "POST", body: "{}" },
                                         );
-                                        open({
-                                          type: "meeting",
-                                          url: result.url,
-                                        });
+                                        await refreshPersonal();
+                                        notify("Absensi akhir tercatat.");
                                       } catch (err) {
                                         notify(errorMessage(err));
                                       }
                                     }}
                                   >
-                                    Ruang webinar
-                                    <ExternalLink size={14} />
+                                    Absensi akhir
                                   </button>
-                                  {!r.checkedInAt ? (
-                                    <button
-                                      className="button secondary small"
-                                      onClick={() =>
-                                        open({
-                                          type: "attendance",
-                                          registration: r,
-                                        })
-                                      }
-                                    >
-                                      Absensi masuk
-                                    </button>
-                                  ) : !r.checkedOutAt ? (
-                                    <button
-                                      className="button secondary small"
-                                      onClick={async () => {
-                                        try {
-                                          await api(
-                                            "/registrations/" +
-                                              r.id +
-                                              "/check-out",
-                                            { method: "POST", body: "{}" },
-                                          );
-                                          await refreshPersonal();
-                                          notify("Absensi akhir tercatat.");
-                                        } catch (err) {
-                                          notify(errorMessage(err));
-                                        }
-                                      }}
-                                    >
-                                      Absensi akhir
-                                    </button>
-                                  ) : (
-                                    <button
-                                      className="button secondary small"
-                                      onClick={() =>
-                                        open({
-                                          type: "evaluation",
-                                          registration: r,
-                                        })
-                                      }
-                                    >
-                                      {r.evaluated
-                                        ? "Lihat / ubah evaluasi"
-                                        : "Isi evaluasi"}
-                                    </button>
-                                  )}
-                                  {r.certificateToken && (
-                                    <a
-                                      className="text-link"
-                                      href={"#verifikasi/" + r.certificateToken}
-                                    >
-                                      Lihat sertifikat
-                                      <ArrowUpRight size={14} />
-                                    </a>
-                                  )}
-                                </div>
-                              </article>
-                            ))}
-                          </div>
-                        ) : (
-                          <StateCard
-                            title="Bab pertamamu belum dimulai"
-                            action={
-                              <a className="button primary" href="#program">
-                                Temukan program
-                                <ArrowRight size={16} />
-                              </a>
-                            }
-                            icon={<BookOpen size={28} />}
-                          >
-                            Setelah mendaftar webinar, jadwal, absensi, dan
-                            evaluasinya akan tampil di sini.
-                          </StateCard>
-                        )}
-                      </>
-                    )}
-                  </>
-                )}
-                {(route === "sertifikat" ||
-                  route.startsWith("verifikasi/")) && (
-                  <>
-                    <PageIntro content={descriptions.sertifikat} />
-                    <div className="certificate-layout">
-                      <section className="panel verification-panel">
-                        <SectionTitle
-                          title="Verifikasi sertifikat"
-                          subtitle="Gunakan kode unik atau tautan yang tercantum pada QR sertifikat."
-                        />
-                        {verificationContent}
-                      </section>
-                      <aside className="panel certificate-explainer">
-                        <span className="certificate-seal">
-                          <Award size={36} />
-                        </span>
-                        <h2>Lebih dari sebuah dokumen.</h2>
-                        <p>
-                          Sertifikat partisipasi diterbitkan setelah kehadiran
-                          dan evaluasi memenuhi ketentuan webinar.
-                        </p>
-                        <ul>
-                          <li>
-                            <Check size={16} />
-                            Nomor dokumen unik
-                          </li>
-                          <li>
-                            <Check size={16} />
-                            Status dapat diverifikasi
-                          </li>
-                          <li>
-                            <Check size={16} />
-                            Penerbitan dapat ditelusuri
-                          </li>
-                        </ul>
-                        <span className="muted">
-                          Bukan sertifikat kompetensi atau klaim akreditasi.
-                        </span>
-                      </aside>
-                    </div>
+                                ) : (
+                                  <button
+                                    className="button secondary small"
+                                    onClick={() =>
+                                      open({
+                                        type: "evaluation",
+                                        registration: r,
+                                      })
+                                    }
+                                  >
+                                    {r.evaluated
+                                      ? "Lihat / ubah evaluasi"
+                                      : "Isi evaluasi"}
+                                  </button>
+                                )}
+                                {r.certificateToken && (
+                                  <a
+                                    className="text-link"
+                                    href={"#verifikasi/" + r.certificateToken}
+                                  >
+                                    Lihat sertifikat
+                                    <ArrowUpRight size={14} />
+                                  </a>
+                                )}
+                              </div>
+                            </article>
+                          ))}
+                        </div>
+                      ) : (
+                        <StateCard
+                          title="Bab pertamamu belum dimulai"
+                          action={
+                            <a className="button primary" href="#program">
+                              Temukan program
+                              <ArrowRight size={16} />
+                            </a>
+                          }
+                          icon={<BookOpen size={28} />}
+                        >
+                          Setelah mendaftar webinar, jadwal, absensi, dan
+                          evaluasinya akan tampil di sini.
+                        </StateCard>
+                      )}
+                    </>
+                  )}
+                </>
+              )}
+              {(route === "sertifikat" ||
+                route === "verifikasi" ||
+                route.startsWith("verifikasi/")) && (
+                <>
+                  <PageIntro
+                    content={
+                      route === "sertifikat"
+                        ? descriptions.sertifikat
+                        : descriptions.verifikasi
+                    }
+                  />
+                  <div className="certificate-layout">
+                    <section className="panel verification-panel">
+                      <SectionTitle
+                        title="Verifikasi sertifikat"
+                        subtitle="Gunakan kode unik atau tautan yang tercantum pada QR sertifikat."
+                      />
+                      {verificationContent}
+                    </section>
+                    <aside className="panel certificate-explainer">
+                      <span className="certificate-seal">
+                        <Award size={36} />
+                      </span>
+                      <h2>Lebih dari sebuah dokumen.</h2>
+                      <p>
+                        Sertifikat partisipasi diterbitkan setelah kehadiran dan
+                        evaluasi memenuhi ketentuan webinar.
+                      </p>
+                      <ul>
+                        <li>
+                          <Check size={16} />
+                          Nomor dokumen unik
+                        </li>
+                        <li>
+                          <Check size={16} />
+                          Status dapat diverifikasi
+                        </li>
+                        <li>
+                          <Check size={16} />
+                          Penerbitan dapat ditelusuri
+                        </li>
+                      </ul>
+                      <span className="muted">
+                        Bukan sertifikat kompetensi atau klaim akreditasi.
+                      </span>
+                    </aside>
+                  </div>
+                  {route === "sertifikat" && (
                     <section className="own-certificates">
                       <SectionTitle title="Sertifikat saya" />
                       {user && registrations.some((r) => r.certificateToken) ? (
@@ -993,236 +884,248 @@ export default function App() {
                         </StateCard>
                       )}
                     </section>
-                  </>
-                )}
-                {route === "tentang" && (
-                  <>
-                    <div className="page-intro">
-                      <div>
-                        <span className="eyebrow">
-                          NEXT GENERATION VIRTUAL LEARNING & KNOWLEDGE
-                        </span>
-                        <h1>Belajar memperluas kemungkinan.</h1>
-                        <p>
-                          NEXIVO mempertemukan rasa ingin tahu, pengalaman
-                          praktisi, dan pembelajaran lintas bidang.
-                        </p>
-                      </div>
+                  )}
+                </>
+              )}
+              {route === "tentang" && (
+                <>
+                  <div className="page-intro">
+                    <div>
+                      <span className="eyebrow">
+                        NEXT GENERATION VIRTUAL LEARNING & KNOWLEDGE
+                      </span>
+                      <h1>Belajar memperluas kemungkinan.</h1>
+                      <p>
+                        NEXIVO mempertemukan rasa ingin tahu, pengalaman
+                        praktisi, dan pembelajaran lintas bidang.
+                      </p>
                     </div>
-                    <section className="about-hero panel">
-                      <div>
-                        <span className="eyebrow">LEARN. CONNECT. GROW.</span>
-                        <h2>
-                          Dari berbagi pengetahuan,
-                          <br />
-                          menuju ekosistem pembelajaran.
-                        </h2>
-                        <p>
-                          Dimulai dari webinar dan seminar online yang terbuka
-                          bagi mahasiswa, pebisnis, akademisi, serta
-                          profesional. NEXIVO dirancang untuk tumbuh menjadi
-                          ruang pengembangan pengetahuan dan kolaborasi.
-                        </p>
+                  </div>
+                  <section className="about-hero panel">
+                    <div>
+                      <span className="eyebrow">LEARN. CONNECT. GROW.</span>
+                      <h2>
+                        Dari berbagi pengetahuan,
+                        <br />
+                        menuju ekosistem pembelajaran.
+                      </h2>
+                      <p>
+                        Dimulai dari webinar dan seminar online yang terbuka
+                        bagi mahasiswa, pebisnis, akademisi, serta profesional.
+                        NEXIVO dirancang untuk tumbuh menjadi ruang pengembangan
+                        pengetahuan dan kolaborasi.
+                      </p>
+                      <button
+                        className="button primary"
+                        onClick={() => open({ type: "interest" })}
+                      >
+                        Ikut dalam perjalanan ini
+                        <ArrowRight size={16} />
+                      </button>
+                    </div>
+                    <span className="about-symbol" aria-hidden="true">
+                      N<span>↗</span>
+                    </span>
+                  </section>
+                  <div className="vision-grid">
+                    {[
+                      [
+                        "01",
+                        "Learn",
+                        "Belajar dari perspektif baru melalui webinar, diskusi, dan pengembangan pengetahuan.",
+                      ],
+                      [
+                        "02",
+                        "Connect",
+                        "Mempertemukan akademisi, praktisi, dan dunia usaha dalam percakapan yang bermakna.",
+                      ],
+                      [
+                        "03",
+                        "Grow",
+                        "Membangun kebiasaan belajar berkelanjutan untuk pengembangan diri dan profesional.",
+                      ],
+                    ].map(([num, title, text]) => (
+                      <article className="panel" key={num}>
+                        <span className="eyebrow">{num}</span>
+                        <h2>{title}.</h2>
+                        <p>{text}</p>
+                      </article>
+                    ))}
+                  </div>
+                  <section className="panel roadmap">
+                    <SectionTitle
+                      title="Arah pengembangan NEXIVO"
+                      subtitle="Visi bertahap, dengan kualitas pembelajaran sebagai fondasinya."
+                    />
+                    <ol>
+                      <li>
+                        <span>01</span>
+                        <div>
+                          <h3>Webinar & knowledge sharing</h3>
+                          <p>
+                            Fondasi awal: katalog, pendaftaran, kehadiran, dan
+                            sertifikat partisipasi.
+                          </p>
+                        </div>
+                        <small>Fokus awal</small>
+                      </li>
+                      <li>
+                        <span>02</span>
+                        <div>
+                          <h3>Professional academy</h3>
+                          <p>
+                            Pengembangan program training dan workshop yang
+                            lebih terstruktur.
+                          </p>
+                        </div>
+                        <small>Rencana</small>
+                      </li>
+                      <li>
+                        <span>03</span>
+                        <div>
+                          <h3>Corporate learning & advisory</h3>
+                          <p>
+                            Kolaborasi pembelajaran, kajian, dan pengembangan
+                            profesional untuk organisasi.
+                          </p>
+                        </div>
+                        <small>Rencana</small>
+                      </li>
+                    </ol>
+                    <p className="status-note">
+                      NEXIVO berada dalam tahap pengembangan. Status badan
+                      hukum, akreditasi, mitra, serta layanan komersial akan
+                      diumumkan setelah terkonfirmasi.
+                    </p>
+                  </section>
+                  <Faq />
+                </>
+              )}
+              {route === "privasi" && (
+                <>
+                  <div className="page-intro">
+                    <div>
+                      <span className="eyebrow">TRANSPARANSI DATA</span>
+                      <h1>Data untuk mendukung perjalanan belajarmu.</h1>
+                      <p>
+                        Pemberitahuan penggunaan data pada versi pengembangan
+                        NEXIVO.
+                      </p>
+                    </div>
+                  </div>
+                  <article className="panel prose">
+                    <h2>Data yang dikumpulkan</h2>
+                    <p>
+                      Akun menyimpan nama, email, kata sandi dalam bentuk hash,
+                      dan institusi bila diisi. Kegiatan menyimpan pendaftaran,
+                      pilihan sertifikat, waktu absensi, evaluasi, serta riwayat
+                      penerbitan sertifikat.
+                    </p>
+                    <h2>Tujuan penggunaan</h2>
+                    <p>
+                      Data digunakan untuk mengelola akun, administrasi webinar,
+                      pencatatan minat program, serta penerbitan dan verifikasi
+                      sertifikat. Formulir minat menyimpan pilihan bidang dan
+                      persetujuan agar pengelola dapat menindaklanjuti saat
+                      program tersedia.
+                    </p>
+                    <h2>Verifikasi publik</h2>
+                    <p>
+                      Halaman verifikasi hanya menampilkan nomor dokumen, nama
+                      penerima yang disingkat, judul kegiatan, tanggal, dan
+                      status. Email, nomor telepon, kata sandi, dan tautan ruang
+                      webinar tidak ditampilkan.
+                    </p>
+                    <h2>Penyimpanan dan akses</h2>
+                    <p>
+                      Versi lokal menyimpan data pada server aplikasi. Peserta
+                      hanya dapat mengakses data kegiatan miliknya; pengelola
+                      memiliki akses administrasi yang diperlukan untuk
+                      menjalankan kegiatan.
+                    </p>
+                    <h2>Sebelum layanan publik</h2>
+                    <p>
+                      Identitas pengelola data, kontak untuk permintaan akses
+                      atau penghapusan, periode retensi, layanan email, dan
+                      kebijakan operasional perlu ditetapkan sebelum menerima
+                      data peserta nyata. Pemberitahuan ini merupakan dasar
+                      untuk ditinjau pengelola sebelum peluncuran.
+                    </p>
+                  </article>
+                </>
+              )}
+              {[
+                "admin",
+                "admin/webinar",
+                "admin/peserta",
+                "admin/minat",
+              ].includes(route) &&
+                (user?.role === "admin" ? (
+                  <Admin
+                    key={route}
+                    view={
+                      route === "admin/webinar"
+                        ? "webinar"
+                        : route === "admin/peserta"
+                          ? "peserta"
+                          : route === "admin/minat"
+                            ? "minat"
+                            : "overview"
+                    }
+                    notify={notify}
+                    refreshEvents={refreshEvents}
+                  />
+                ) : (
+                  <StateCard
+                    title="Akses pengelola diperlukan"
+                    headingLevel={1}
+                    action={
+                      !user && (
                         <button
                           className="button primary"
-                          onClick={() => open({ type: "interest" })}
+                          onClick={() => open({ type: "auth" })}
                         >
-                          Ikut dalam perjalanan ini
-                          <ArrowRight size={16} />
+                          Masuk
                         </button>
-                      </div>
-                      <span className="about-symbol" aria-hidden="true">
-                        N<span>↗</span>
-                      </span>
-                    </section>
-                    <div className="vision-grid">
-                      {[
-                        [
-                          "01",
-                          "Learn",
-                          "Belajar dari perspektif baru melalui webinar, diskusi, dan pengembangan pengetahuan.",
-                        ],
-                        [
-                          "02",
-                          "Connect",
-                          "Mempertemukan akademisi, praktisi, dan dunia usaha dalam percakapan yang bermakna.",
-                        ],
-                        [
-                          "03",
-                          "Grow",
-                          "Membangun kebiasaan belajar berkelanjutan untuk pengembangan diri dan profesional.",
-                        ],
-                      ].map(([num, title, text]) => (
-                        <article className="panel" key={num}>
-                          <span className="eyebrow">{num}</span>
-                          <h2>{title}.</h2>
-                          <p>{text}</p>
-                        </article>
-                      ))}
-                    </div>
-                    <section className="panel roadmap">
-                      <SectionTitle
-                        title="Arah pengembangan NEXIVO"
-                        subtitle="Visi bertahap, dengan kualitas pembelajaran sebagai fondasinya."
-                      />
-                      <ol>
-                        <li>
-                          <span>01</span>
-                          <div>
-                            <h3>Webinar & knowledge sharing</h3>
-                            <p>
-                              Fondasi awal: katalog, pendaftaran, kehadiran, dan
-                              sertifikat partisipasi.
-                            </p>
-                          </div>
-                          <small>Fokus awal</small>
-                        </li>
-                        <li>
-                          <span>02</span>
-                          <div>
-                            <h3>Professional academy</h3>
-                            <p>
-                              Pengembangan program training dan workshop yang
-                              lebih terstruktur.
-                            </p>
-                          </div>
-                          <small>Rencana</small>
-                        </li>
-                        <li>
-                          <span>03</span>
-                          <div>
-                            <h3>Corporate learning & advisory</h3>
-                            <p>
-                              Kolaborasi pembelajaran, kajian, dan pengembangan
-                              profesional untuk organisasi.
-                            </p>
-                          </div>
-                          <small>Rencana</small>
-                        </li>
-                      </ol>
-                      <p className="status-note">
-                        NEXIVO berada dalam tahap pengembangan. Status badan
-                        hukum, akreditasi, mitra, serta layanan komersial akan
-                        diumumkan setelah terkonfirmasi.
-                      </p>
-                    </section>
-                    <Faq />
-                  </>
+                      )
+                    }
+                    icon={<ShieldCheck size={28} />}
+                  >
+                    Dashboard ini tersedia untuk akun pengelola yang telah
+                    diberi akses.
+                  </StateCard>
+                ))}
+              {![
+                "beranda",
+                "dashboard",
+                "verifikasi",
+                "admin/webinar",
+                "admin/peserta",
+                "admin/minat",
+                "program",
+                "belajarku",
+                "sertifikat",
+                "tentang",
+                "privasi",
+                "admin",
+              ].includes(route) &&
+                !route.startsWith("verifikasi/") && (
+                  <StateCard
+                    title="Halaman belum tersedia"
+                    headingLevel={1}
+                    action={
+                      <a className="button primary" href="#beranda">
+                        Kembali ke beranda
+                      </a>
+                    }
+                  >
+                    Pilih halaman melalui navigasi utama.
+                  </StateCard>
                 )}
-                {route === "privasi" && (
-                  <>
-                    <div className="page-intro">
-                      <div>
-                        <span className="eyebrow">TRANSPARANSI DATA</span>
-                        <h1>Data untuk mendukung perjalanan belajarmu.</h1>
-                        <p>
-                          Pemberitahuan penggunaan data pada versi pengembangan
-                          NEXIVO.
-                        </p>
-                      </div>
-                    </div>
-                    <article className="panel prose">
-                      <h2>Data yang dikumpulkan</h2>
-                      <p>
-                        Akun menyimpan nama, email, kata sandi dalam bentuk
-                        hash, dan institusi bila diisi. Kegiatan menyimpan
-                        pendaftaran, pilihan sertifikat, waktu absensi,
-                        evaluasi, serta riwayat penerbitan sertifikat.
-                      </p>
-                      <h2>Tujuan penggunaan</h2>
-                      <p>
-                        Data digunakan untuk mengelola akun, administrasi
-                        webinar, pencatatan minat program, serta penerbitan dan
-                        verifikasi sertifikat. Formulir minat menyimpan pilihan
-                        bidang dan persetujuan agar pengelola dapat
-                        menindaklanjuti saat program tersedia.
-                      </p>
-                      <h2>Verifikasi publik</h2>
-                      <p>
-                        Halaman verifikasi hanya menampilkan nomor dokumen, nama
-                        penerima yang disingkat, judul kegiatan, tanggal, dan
-                        status. Email, nomor telepon, kata sandi, dan tautan
-                        ruang webinar tidak ditampilkan.
-                      </p>
-                      <h2>Penyimpanan dan akses</h2>
-                      <p>
-                        Versi lokal menyimpan data pada server aplikasi. Peserta
-                        hanya dapat mengakses data kegiatan miliknya; pengelola
-                        memiliki akses administrasi yang diperlukan untuk
-                        menjalankan kegiatan.
-                      </p>
-                      <h2>Sebelum layanan publik</h2>
-                      <p>
-                        Identitas pengelola data, kontak untuk permintaan akses
-                        atau penghapusan, periode retensi, layanan email, dan
-                        kebijakan operasional perlu ditetapkan sebelum menerima
-                        data peserta nyata. Pemberitahuan ini merupakan dasar
-                        untuk ditinjau pengelola sebelum peluncuran.
-                      </p>
-                    </article>
-                  </>
-                )}
-                {route === "admin" &&
-                  (user?.role === "admin" ? (
-                    <Admin notify={notify} refreshEvents={refreshEvents} />
-                  ) : (
-                    <StateCard
-                      title="Akses pengelola diperlukan"
-                      action={
-                        !user && (
-                          <button
-                            className="button primary"
-                            onClick={() => open({ type: "auth" })}
-                          >
-                            Masuk
-                          </button>
-                        )
-                      }
-                      icon={<ShieldCheck size={28} />}
-                    >
-                      Dashboard ini tersedia untuk akun pengelola yang telah
-                      diberi akses.
-                    </StateCard>
-                  ))}
-                {![
-                  "beranda",
-                  "program",
-                  "belajarku",
-                  "sertifikat",
-                  "tentang",
-                  "privasi",
-                  "admin",
-                ].includes(route) &&
-                  !route.startsWith("verifikasi/") && (
-                    <StateCard
-                      title="Halaman belum tersedia"
-                      action={
-                        <a className="button primary" href="#beranda">
-                          Kembali ke beranda
-                        </a>
-                      }
-                    >
-                      Pilih halaman melalui navigasi utama.
-                    </StateCard>
-                  )}
-              </>
-            )}
-          </main>
-          <footer className="footer">
-            <Brand small />
-            <p>Next Generation Virtual Learning & Knowledge</p>
-            <nav aria-label="Navigasi footer">
-              <a href="#tentang">Tentang NEXIVO</a>
-              <a href="#privasi">Penggunaan data</a>
-              <a href="#sertifikat">Verifikasi sertifikat</a>
-            </nav>
-            <span className="footer-note">
-              <span className="tiny-dot" />
-              Belajar. Terhubung. Bertumbuh.
-            </span>
-          </footer>
-        </div>
-      </div>
+            </>
+          )}
+        </main>
+      </Layout>
       {toast && (
         <div className="toast" role="status">
           <CheckCircle2 size={20} />
@@ -1271,6 +1174,13 @@ export default function App() {
                   setUser(loggedIn);
                   setDialog(null);
                   await refreshPersonal();
+                  if (
+                    !isWorkspace ||
+                    route === "dashboard" ||
+                    (route.startsWith("admin") && loggedIn.role !== "admin")
+                  )
+                    window.location.hash =
+                      loggedIn.role === "admin" ? "admin" : "dashboard";
                   notify(`Selamat datang, ${loggedIn.name.split(" ")[0]}.`);
                 }}
               />
@@ -1631,23 +1541,7 @@ export default function App() {
               <button
                 className="button secondary"
                 type="button"
-                onClick={async () => {
-                  try {
-                    const result = await api<{ csrf: string }>("/auth/logout", {
-                      method: "POST",
-                      body: "{}",
-                    });
-                    setCsrf(result.csrf);
-                    setUser(null);
-                    setBookmarks([]);
-                    setRegistrations([]);
-                    setDialog(null);
-                    window.location.hash = "beranda";
-                    notify("Kamu sudah keluar.");
-                  } catch (err) {
-                    setFormError(errorMessage(err));
-                  }
-                }}
+                onClick={() => void logout()}
               >
                 <LogOut size={16} />
                 Keluar dari akun

@@ -55,7 +55,12 @@ export function Brand({ small = false }: { small?: boolean }) {
       aria-label="NEXIVO — beranda"
     >
       <span className="brand-mark">
-        <img src={import.meta.env.BASE_URL + "logo.jpg"} alt="" width="1808" height="1024" />
+        <img
+          src={import.meta.env.BASE_URL + "logo.jpg"}
+          alt=""
+          width="1808"
+          height="1024"
+        />
       </span>
       <span className="brand-name">
         NEXIVO<span>LEARN. CONNECT. GROW.</span>
@@ -119,16 +124,19 @@ export function StateCard({
   children,
   action,
   icon = <Bookmark size={27} />,
+  headingLevel = 2,
 }: {
   title: string;
   children: ReactNode;
   action?: ReactNode;
   icon?: ReactNode;
+  headingLevel?: 1 | 2;
 }) {
+  const Heading = headingLevel === 1 ? "h1" : "h2";
   return (
     <div className="empty-state">
       <span className="empty-icon">{icon}</span>
-      <h2>{title}</h2>
+      <Heading>{title}</Heading>
       <p>{children}</p>
       {action}
     </div>

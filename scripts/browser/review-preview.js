@@ -8,7 +8,8 @@
     errors = [],
     failed = [],
     requests = [],
-    badResponses = [];
+    badResponses = [],
+    scans = [];
   const check = (name, pass) => {
     if (!pass) throw new Error(name);
     checks.push(name);
@@ -22,50 +23,46 @@
   );
   page.on("response", (r) => {
     if (r.status() >= 400)
-      badResponses.push({ url: r.url(), status: r.status() });
+      badResponses.push({ status: r.status(), url: r.url() });
   });
+  await page.context().clearCookies();
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto(base);
   await page.evaluate(() => localStorage.setItem("nexivo-theme", "light"));
   await page.reload();
-  await page.getByRole("heading", { name: "Hai, selamat datang!" }).waitFor();
+  await page
+    .getByRole("heading", { name: "Wawasan baru. Langkah lebih maju." })
+    .waitFor();
   check(
-    "preview notice visible",
+    "public landing is separate from dashboard",
+    (await page.locator(".public-header").count()) === 1 &&
+      (await page.locator(".app-sidebar").count()) === 0,
+  );
+  check(
+    "public preview notice is visible",
     await page.getByText("PREVIEW DESAIN", { exact: true }).isVisible(),
   );
   check(
-    "reviewed seed topics load",
-    (await page.locator(".featured-programs .program-card").count()) === 3,
-  );
-  check(
-    "logo asset loads from repository base",
+    "logo works from repository base",
     await page
-      .locator(".sidebar-brand img")
+      .locator(".public-header img")
       .evaluate((e) => e.complete && e.naturalWidth > 0),
   );
-  await page.waitForTimeout(800);
-  await page.screenshot({
-    path: "artifacts/nexivo-pages-desktop.png",
-    fullPage: true,
-  });
   await page.getByRole("button", { name: "Masuk", exact: true }).click();
   check(
-    "account dialog explains static preview",
-    await page
-      .getByRole("heading", { name: "Kamu sedang menjelajahi preview desain." })
-      .isVisible(),
-  );
-  check(
-    "no password or personal data form in preview",
-    (await page.getByRole("dialog").locator("input").count()) === 0,
+    "preview account dialog has no personal data form",
+    (await page
+      .getByRole("dialog")
+      .locator("input,textarea,select")
+      .count()) === 0,
   );
   await page.keyboard.press("Escape");
   await page
-    .getByRole("button", { name: "Kabari saya nanti", exact: true })
+    .getByRole("button", { name: "Catat minat saya", exact: true })
     .click();
   check(
-    "interest dialog does not collect personal data",
+    "preview interest dialog has no personal data form",
     (await page
       .getByRole("dialog")
       .locator("input,textarea,select")
@@ -80,16 +77,31 @@
     () =>
       document.querySelectorAll("dialog .search-results button").length === 1,
   );
-  checks.push("search works without backend");
+  checks.push("public search works without backend");
   await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: /05 Teknologi/ }).click();
   await page
-    .getByRole("navigation", { name: "Navigasi utama" })
-    .getByRole("link", { name: /Webinar/ })
-    .click();
+    .getByRole("heading", { name: "Pengetahuan untuk langkah berikutnya." })
+    .waitFor();
   check(
-    "full static catalog",
+    "public category opens filtered catalog",
+    (await page.locator(".program-card").count()) === 1,
+  );
+  await page.getByRole("button", { name: "Semua bidang", exact: true }).click();
+  check(
+    "catalog includes six reviewed seed topics",
     (await page.locator(".program-card").count()) === 6,
   );
+  await page
+    .getByRole("searchbox", { name: "Cari di katalog program" })
+    .fill("zz-empty-review-8271");
+  check(
+    "catalog empty state works",
+    await page
+      .getByRole("heading", { name: "Belum menemukan yang kamu cari" })
+      .isVisible(),
+  );
+  await page.getByRole("button", { name: "Reset pencarian" }).click();
   await page.getByRole("button", { name: "Masuk", exact: true }).click();
   await page
     .getByRole("dialog")
@@ -99,30 +111,20 @@
     "preview CTA closes dialog on same route",
     (await page.getByRole("dialog").count()) === 0,
   );
-  await page
-    .getByRole("searchbox", { name: "Cari di katalog program" })
-    .fill("zz-no-match-918273");
-  check(
-    "search empty state",
-    (await page.locator(".program-card").count()) === 0,
-  );
-  await page
-    .getByRole("searchbox", { name: "Cari di katalog program" })
-    .fill("");
   await page.addScriptTag({ path: "node_modules/axe-core/axe.min.js" });
-  await page.emulateMedia({ reducedMotion: "reduce" });
-  const scans = [];
   for (const route of [
+    "beranda",
     "program",
-    "belajarku",
-    "sertifikat",
     "tentang",
     "privasi",
+    "verifikasi",
+    "dashboard",
+    "belajarku",
+    "sertifikat",
+    "admin",
   ]) {
-    await page.evaluate((hash) => {
-      window.location.hash = hash;
-    }, route);
-    await page.waitForTimeout(180);
+    await page.evaluate((hash) => (window.location.hash = hash), route);
+    await page.waitForTimeout(100);
     const violations = await page.evaluate(async () =>
       (
         await window.axe.run(document, {
@@ -140,51 +142,75 @@
       })),
     );
     scans.push({ route, violations });
+    if (route === "verifikasi")
+      check(
+        "verification is public without private certificates",
+        (await page.locator(".public-header").count()) === 1 &&
+          (await page
+            .getByRole("heading", { name: "Sertifikat saya", exact: true })
+            .count()) === 0,
+      );
+    if (route === "dashboard")
+      check(
+        "participant design preview uses learning sidebar",
+        (await page
+          .getByRole("navigation", { name: "Navigasi peserta" })
+          .isVisible()) && (await page.locator(".public-header").count()) === 0,
+      );
+    if (route === "admin")
+      check(
+        "preview does not expose management data",
+        (await page
+          .getByRole("heading", { name: "Akses pengelola diperlukan" })
+          .isVisible()) && (await page.locator("table").count()) === 0,
+      );
   }
-  await page.goto(base + "#beranda");
-  await page.getByRole("heading", { name: "Hai, selamat datang!" }).waitFor();
   const responsive = [];
-  for (const width of [320, 390, 768, 1024, 1440]) {
-    await page.setViewportSize({ width, height: 900 });
-    const overflow = await page.evaluate(
-      () => document.documentElement.scrollWidth > innerWidth,
-    );
-    responsive.push({ width, overflow });
-    check("static layout at " + width, !overflow);
+  for (const route of ["beranda", "dashboard", "admin"]) {
+    await page.evaluate((hash) => (window.location.hash = hash), route);
+    await page.waitForTimeout(100);
+    for (const width of [320, 390, 768, 1024, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      const overflow = await page.evaluate(
+        () => document.documentElement.scrollWidth > innerWidth,
+      );
+      responsive.push({ route, width, overflow });
+      check("responsive " + route + " " + width, !overflow);
+    }
   }
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.waitForTimeout(250);
+  await page.evaluate(() => (window.location.hash = "beranda"));
+  await page.waitForTimeout(100);
   await page.screenshot({
-    path: "artifacts/nexivo-pages-mobile.png",
+    path: "artifacts/nexivo-pages-public-desktop.png",
     fullPage: true,
   });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({
+    path: "artifacts/nexivo-pages-public-mobile.png",
+    fullPage: true,
+  });
+  await page.getByRole("button", { name: "Buka menu website" }).click();
   check(
-    "mobile search has readable label",
-    await page.locator(".search-trigger > span").isVisible(),
+    "mobile public navigation works",
+    await page
+      .getByRole("navigation", { name: "Navigasi website" })
+      .isVisible(),
+  );
+  await page.keyboard.press("Escape");
+  check(
+    "no backend API requests",
+    requests.every((r) => !new URL(r.url).pathname.includes("/api/")),
   );
   check(
-    "no API requests on static preview",
-    requests.every((r) => !new URL(r.url).pathname.startsWith("/api")),
-  );
-  check(
-    "no server mutations in preview",
+    "no mutation requests",
     requests.every((r) => ["GET", "HEAD"].includes(r.method)),
+  );
+  check(
+    "all public and dashboard scans pass",
+    scans.every((s) => s.violations.length === 0),
   );
   check("no runtime errors", errors.length === 0);
   check("no failed requests", failed.length === 0);
   check("no HTTP errors", badResponses.length === 0);
-  check(
-    "accessibility scans across all public pages",
-    scans.every((scan) => scan.violations.length === 0),
-  );
-  return {
-    base,
-    checks,
-    scans,
-    responsive,
-    errors,
-    failed,
-    badResponses,
-    requests: requests.length,
-  };
+  return { base, checks, scans, responsive, errors, failed, badResponses };
 }

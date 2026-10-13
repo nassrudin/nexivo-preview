@@ -1,5 +1,13 @@
 ﻿# Desain dan sumber konten
 
+## Pemisahan website dan dashboard — 14 Oktober 2026
+
+Website publik memperkenalkan NEXIVO dan membantu pengunjung menemukan webinar, dengan navigasi horizontal, hero editorial putih/biru, teks lebih besar, penjelasan alur, dan footer informasi. Tindakan utama adalah jelajahi webinar; form login tetap satu alur yang sama.
+
+Dashboard peserta memakai sidebar biru dan komponen pembelajaran dari referensi gambar pengguna. Dashboard pengelola memakai sidebar navy, hierarki yang lebih ringkas, tabel operasional, serta navigasi khusus webinar, peserta/sertifikat, dan minat. Login mengarah ke ruang yang sesuai peran; pemeriksaan otorisasi server tetap diperlukan pada semua operasi.
+
+Di ponsel, navigasi publik menjadi menu ringkas dan sidebar dashboard menjadi drawer. Keyboard, fokus dialog/menu, loading/error/empty/permission states, tema gelap, dan reduced motion harus diuji. Verifikasi sertifikat publik terpisah dari halaman sertifikat pribadi. Hindari menampilkan kontrol administrasi dan progres pribadi sebagai halaman depan publik, serta jangan menambahkan jadwal/statistik yang belum dikonfirmasi.
+
 ## Referensi yang dipakai
 
 Empat gambar `desainwebinar1.jpg` sampai `desainwebinar4.jpg` diberikan langsung oleh pemilik sebagai referensi visual terbaru. Referensi Halden dari permintaan awal digantikan oleh gambar-gambar ini. Gambar contoh tidak disalin ke website atau dipublikasikan di repository.

@@ -39,9 +39,11 @@ type Overview = {
 export default function Admin({
   notify,
   refreshEvents,
+  view = "overview",
 }: {
   notify: (message: string) => void;
   refreshEvents: () => Promise<void>;
+  view?: "overview" | "webinar" | "peserta" | "minat";
 }) {
   const [data, setData] = useState<Overview | null>(null);
   const [error, setError] = useState("");
@@ -145,22 +147,33 @@ export default function Admin({
       <div className="page-intro">
         <div>
           <span className="eyebrow">PENGELOLA NEXIVO</span>
-          <h1>Kelola kegiatan. Jaga kualitas.</h1>
+          <h1>
+            {
+              {
+                overview: "Ringkasan pengelolaan",
+                webinar: "Kelola webinar",
+                peserta: "Peserta & sertifikat",
+                minat: "Minat program",
+              }[view]
+            }
+          </h1>
           <p>
             Jadwal nyata, peserta terdaftar, dan sertifikat yang dapat
             ditelusuri.
           </p>
         </div>
-        <button
-          className="button primary"
-          onClick={() => {
-            setAdding(true);
-            setError("");
-          }}
-        >
-          <Plus size={17} />
-          Buat webinar
-        </button>
+        {(view === "overview" || view === "webinar") && (
+          <button
+            className="button primary"
+            onClick={() => {
+              setAdding(true);
+              setError("");
+            }}
+          >
+            <Plus size={17} />
+            Buat webinar
+          </button>
+        )}
       </div>
       {error && !adding && !action && (
         <p className="form-error" role="alert">
@@ -169,7 +182,7 @@ export default function Admin({
         </p>
       )}
       {!data ? (
-        <p role="status">Memuat dashboard pengelola…</p>
+        !error && <p role="status">Memuat dashboard pengelola…</p>
       ) : (
         <>
           <div className="admin-stats">
@@ -191,133 +204,147 @@ export default function Admin({
               <span>Minat program tercatat</span>
             </article>
           </div>
-          <section className="panel">
-            <SectionTitle title="Program & webinar" />
-            <div className="table-scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Program</th>
-                    <th>Status</th>
-                    <th>Jadwal</th>
-                    <th>Peserta</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.events.map((e) => (
-                    <tr key={e.id}>
-                      <td>{e.title}</td>
-                      <td>
-                        {e.status === "planned"
-                          ? "Rencana"
-                          : e.status === "published"
-                            ? "Dipublikasikan"
-                            : "Selesai"}
-                      </td>
-                      <td>
-                        {e.startsAt
-                          ? formatDate(e.startsAt, true)
-                          : "Belum ditentukan"}
-                      </td>
-                      <td>
-                        {e.registered} / {e.capacity}
-                      </td>
+          {(view === "overview" || view === "webinar") && (
+            <section className="panel">
+              <SectionTitle title="Program & webinar" />
+              <div
+                className="table-scroll"
+                role="region"
+                aria-label="Tabel program dan webinar"
+                tabIndex={0}
+              >
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Program</th>
+                      <th>Status</th>
+                      <th>Jadwal</th>
+                      <th>Peserta</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
-          <section className="panel admin-participants">
-            <SectionTitle
-              title="Peserta & validasi"
-              subtitle="Verifikasi kehadiran dengan catatan platform webinar sebelum menyetujui."
-            />
-            {!data.registrations.length ? (
-              <p className="muted">Belum ada peserta terdaftar.</p>
-            ) : (
-              data.registrations.map((r) => (
-                <article className="participant-row" key={r.id}>
-                  <div>
-                    <strong>{r.name}</strong>
-                    <span>{r.title}</span>
-                    <small>{r.email}</small>
-                    <small>
-                      Absensi:{" "}
-                      {r.checkedOutAt
-                        ? "Masuk & keluar"
-                        : r.checkedInAt
-                          ? "Masuk"
-                          : "Belum ada"}{" "}
-                      · Evaluasi: {r.evaluated ? "Selesai" : "Belum selesai"}
-                    </small>
-                  </div>
-                  <div className="row-actions">
-                    {r.approved ? (
-                      <span className="status-pill">Kehadiran valid</span>
-                    ) : (
-                      <button
-                        className="button secondary small"
-                        disabled={!r.checkedOutAt || busy}
-                        onClick={() => {
-                          setAction({ id: r.id, type: "approve" });
-                          setError("");
-                        }}
-                      >
-                        Validasi
-                      </button>
-                    )}
-                    {r.token ? (
-                      <>
-                        <a
-                          href={"#verifikasi/" + r.token}
-                          className="text-link"
+                  </thead>
+                  <tbody>
+                    {data.events.map((e) => (
+                      <tr key={e.id}>
+                        <td>{e.title}</td>
+                        <td>
+                          {e.status === "planned"
+                            ? "Rencana"
+                            : e.status === "published"
+                              ? "Dipublikasikan"
+                              : "Selesai"}
+                        </td>
+                        <td>
+                          {e.startsAt
+                            ? formatDate(e.startsAt, true)
+                            : "Belum ditentukan"}
+                        </td>
+                        <td>
+                          {e.registered} / {e.capacity}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          )}
+          {(view === "overview" || view === "peserta") && (
+            <section className="panel admin-participants">
+              <SectionTitle
+                title="Peserta & validasi"
+                subtitle="Verifikasi kehadiran dengan catatan platform webinar sebelum menyetujui."
+              />
+              {!data.registrations.length ? (
+                <p className="muted">Belum ada peserta terdaftar.</p>
+              ) : (
+                data.registrations.map((r) => (
+                  <article className="participant-row" key={r.id}>
+                    <div>
+                      <strong>{r.name}</strong>
+                      <span>{r.title}</span>
+                      <small>{r.email}</small>
+                      <small>
+                        Absensi:{" "}
+                        {r.checkedOutAt
+                          ? "Masuk & keluar"
+                          : r.checkedInAt
+                            ? "Masuk"
+                            : "Belum ada"}{" "}
+                        · Evaluasi: {r.evaluated ? "Selesai" : "Belum selesai"}
+                      </small>
+                    </div>
+                    <div className="row-actions">
+                      {r.approved ? (
+                        <span className="status-pill">Kehadiran valid</span>
+                      ) : (
+                        <button
+                          className="button secondary small"
+                          disabled={!r.checkedOutAt || busy}
+                          onClick={() => {
+                            setAction({ id: r.id, type: "approve" });
+                            setError("");
+                          }}
                         >
-                          {r.certificateStatus === "revoked"
-                            ? "Dicabut"
-                            : "Lihat sertifikat"}
-                        </a>
-                        {r.certificateStatus === "valid" && (
-                          <button
-                            className="button secondary small"
-                            onClick={() => {
-                              setAction({ id: r.token!, type: "revoke" });
-                              setError("");
-                            }}
+                          Validasi
+                        </button>
+                      )}
+                      {r.token ? (
+                        <>
+                          <a
+                            href={"#verifikasi/" + r.token}
+                            className="text-link"
                           >
-                            Cabut
-                          </button>
-                        )}
-                      </>
-                    ) : (
-                      <button
-                        className="button primary small"
-                        disabled={
-                          !r.approved ||
-                          !r.evaluated ||
-                          !r.wantsCertificate ||
-                          busy
-                        }
-                        onClick={() => void issue(r.id)}
-                      >
-                        Terbitkan sertifikat
-                      </button>
-                    )}
-                  </div>
-                </article>
-              ))
-            )}
-          </section>
+                            {r.certificateStatus === "revoked"
+                              ? "Dicabut"
+                              : "Lihat sertifikat"}
+                          </a>
+                          {r.certificateStatus === "valid" && (
+                            <button
+                              className="button secondary small"
+                              onClick={() => {
+                                setAction({ id: r.token!, type: "revoke" });
+                                setError("");
+                              }}
+                            >
+                              Cabut
+                            </button>
+                          )}
+                        </>
+                      ) : (
+                        <button
+                          className="button primary small"
+                          disabled={
+                            !r.approved ||
+                            !r.evaluated ||
+                            !r.wantsCertificate ||
+                            busy
+                          }
+                          onClick={() => void issue(r.id)}
+                        >
+                          Terbitkan sertifikat
+                        </button>
+                      )}
+                    </div>
+                  </article>
+                ))
+              )}
+            </section>
+          )}
         </>
       )}
-      {data && (
+      {data && (view === "overview" || view === "minat") && (
         <section className="panel admin-participants">
           <SectionTitle
             title="Minat program"
             subtitle="Pendaftar minat terbaru (maks. 200). Informasi ini hanya tersedia untuk pengelola; pengiriman email belum otomatis."
           />
           {data.interests.length ? (
-            <div className="table-scroll">
+            <div
+              className="table-scroll"
+              role="region"
+              aria-label="Tabel minat program"
+              tabIndex={0}
+            >
               <table>
                 <thead>
                   <tr>
