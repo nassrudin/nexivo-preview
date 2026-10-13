@@ -1,5 +1,7 @@
 import { resolve } from "node:path";
+import { createServer as createHttpServer } from "node:http";
 import express from "express";
+import type { ViteDevServer } from "vite";
 import { createApplication } from "./app";
 
 const production =
@@ -16,6 +18,8 @@ const { app, db } = createApplication({
   appUrl,
   production,
 });
+const server = createHttpServer(app);
+let vite: ViteDevServer | undefined;
 if (production || preview) {
   app.use(
     express.static(resolve("dist"), {
@@ -30,22 +34,32 @@ if (production || preview) {
   });
 } else {
   const { createServer } = await import("vite");
-  const vite = await createServer({
-    server: { middlewareMode: true },
+  vite = await createServer({
+    server: { middlewareMode: true, hmr: { server } },
     appType: "spa",
   });
   app.use(vite.middlewares);
 }
-const server = app.listen(port, host, () =>
-  console.log(`NEXIVO ready at ${appUrl}`),
-);
 server.requestTimeout = 15000;
 server.headersTimeout = 10000;
-function close() {
+let closing = false;
+async function close(exitCode = 0) {
+  if (closing) return;
+  closing = true;
+  await vite?.close();
   server.close(() => {
     db.close();
-    process.exit(0);
+    process.exit(exitCode);
   });
 }
-process.on("SIGTERM", close);
-process.on("SIGINT", close);
+server.once("error", (error: NodeJS.ErrnoException) => {
+  console.error(
+    error.code === "EADDRINUSE"
+      ? `Port ${port} sudah dipakai. Jika NEXIVO sudah berjalan, buka ${appUrl}. Untuk menjalankan ulang, hentikan server sebelumnya dengan Ctrl+C.`
+      : `NEXIVO tidak dapat dijalankan (${error.code || "server error"}).`,
+  );
+  void close(1);
+});
+server.listen(port, host, () => console.log(`NEXIVO ready at ${appUrl}`));
+process.on("SIGTERM", () => void close());
+process.on("SIGINT", () => void close());
