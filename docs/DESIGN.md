@@ -2,6 +2,8 @@
 
 ## Pemisahan website dan dashboard — 14 Oktober 2026
 
+Penyempurnaan keterbacaan: audit render menemukan teks operasional 8-13 px. `src/typography.css` menyatukan ukuran berbasis rem: isi 16 px, informasi pendukung 14 px, menu/tombol 15-16 px, dan label dekoratif 12 px pada ukuran browser standar. Judul utama tetap. Ringkasan status ponsel ditata satu kolom agar tulisan tidak perlu diperkecil; teks kecil di dalam logo/ilustrasi dekoratif tetap terpisah dari konten fungsional.
+
 Website publik memperkenalkan NEXIVO dan membantu pengunjung menemukan webinar, dengan navigasi horizontal, hero editorial putih/biru, teks lebih besar, penjelasan alur, dan footer informasi. Tindakan utama adalah jelajahi webinar; form login tetap satu alur yang sama.
 
 Dashboard peserta memakai sidebar biru dan komponen pembelajaran dari referensi gambar pengguna. Dashboard pengelola memakai sidebar navy, hierarki yang lebih ringkas, tabel operasional, serta navigasi khusus webinar, peserta/sertifikat, dan minat. Login mengarah ke ruang yang sesuai peran; pemeriksaan otorisasi server tetap diperlukan pada semua operasi.

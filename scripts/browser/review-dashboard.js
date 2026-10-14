@@ -204,6 +204,7 @@
   await page
     .getByRole("heading", { name: "Kelola webinar", exact: true })
     .waitFor();
+  await page.getByRole("heading", { name: "Program & webinar" }).waitFor();
   check(
     "webinar management is focused view",
     (await page
@@ -258,7 +259,15 @@
   const responsive = [];
   for (const route of ["beranda", "dashboard", "admin"]) {
     await page.goto(base + "#" + route);
-    await page.locator("main h1").waitFor();
+    await page
+      .locator(
+        route === "beranda"
+          ? ".public-hero"
+          : route === "dashboard"
+            ? ".learning-dashboard"
+            : ".admin-stats",
+      )
+      .waitFor();
     for (const width of [320, 390, 768, 1024, 1440]) {
       await page.setViewportSize({ width, height: 900 });
       const overflow = await page.evaluate(

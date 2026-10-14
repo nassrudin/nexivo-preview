@@ -4,6 +4,22 @@ Diperiksa 14 Oktober 2026 (WIB), Node 24.21.0, Windows, Chrome melalui Playwrigh
 
 ## Kode dan backend
 
+### Audit keterbacaan font
+
+Ukuran diperiksa dari `getComputedStyle` pada render Chrome desktop 1440 px dan ponsel 390 px, menggunakan database review terisolasi:
+
+| Teks fungsional | Sebelum | Sesudah pada ukuran browser standar |
+| --- | --- | --- |
+| Deskripsi kartu dashboard | 13 px | 16 px |
+| Status program dashboard | 10 px | 14 px |
+| Jadwal pada kartu dashboard | 11 px | 14 px |
+| Keterangan ringkasan pada ponsel | 8 px | 14 px |
+| Navigasi sidebar | 13 px | 15 px |
+| Header / isi tabel admin | 11 / 13 px | 14 / 15 px |
+| Status / jadwal kartu publik | 11 / 12 px | 14 / 14 px |
+
+Ukuran bersama memakai rem; label dekoratif memakai 12 px. Ringkasan status ponsel disusun satu kolom untuk mengakomodasi teks yang lebih besar. Peninjauan screenshot desktop dan ponsel dilakukan setelah perubahan. Log audit lokal: `artifacts/fonts-before.log`, `artifacts/fonts-after.log`; pengujian browser sesudah perubahan: `artifacts/typography-review.log`.
+
 - ESLint dan TypeScript strict: lulus.
 - Build aplikasi lengkap dan build preview Pages: lulus.
 - Tes HTTP/keamanan: 13 lulus, 0 gagal. Validasi, autentikasi, CSRF/origin, peran/kepemilikan, kuota, absensi, sertifikat, rate limit, cookie, dan CSP tetap diperiksa.

@@ -5,6 +5,7 @@ import "./styles.css";
 import "./studio.css";
 import "./public/public.css";
 import "./layouts/workspace.css";
+import "./typography.css";
 import App from "./App";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(

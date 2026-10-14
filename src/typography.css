@@ -1,0 +1,362 @@
+/* Shared reading sizes. Keep functional text readable at every breakpoint.
+   Tiny lettering inside logos and decorative illustrations is intentionally separate. */
+:root {
+  --type-caption: 0.75rem;
+  --type-secondary: 0.875rem;
+  --type-ui: 0.9375rem;
+  --type-body: 1rem;
+  --type-card-title: 1.125rem;
+  --type-section-title: 1.375rem;
+}
+.public-shell,
+.workspace-shell {
+  font-size: var(--type-body);
+}
+
+/* Public website: supporting information is part of the reading experience. */
+.public-shell .public-navigation a {
+  font-size: var(--type-body);
+}
+.public-shell .public-tools .public-login,
+.public-shell .public-about-link,
+.public-shell .public-section-link {
+  font-size: var(--type-ui);
+}
+.public-shell .public-kicker,
+.public-shell .eyebrow,
+.public-shell .public-field small,
+.public-shell .public-preview > span {
+  font-size: var(--type-caption);
+}
+.public-shell .public-hero-copy > p {
+  font-size: 1.0625rem;
+}
+.public-shell .public-hero-note,
+.public-shell .public-principles small,
+.public-shell .program-status,
+.public-shell .category-label,
+.public-shell .card-bottom > span,
+.public-shell .public-program-note,
+.public-shell .public-preview,
+.public-shell .public-footer-bottom {
+  font-size: var(--type-secondary);
+}
+.public-shell .public-principles strong,
+.public-shell .program-card p,
+.public-shell .public-section-heading > p,
+.public-shell .public-story-intro p,
+.public-shell .public-learning-steps p,
+.public-shell .public-about-strip p {
+  font-size: var(--type-body);
+  line-height: 1.8;
+}
+.public-shell .public-footer-grid nav > a,
+.public-shell .public-footer-grid nav > span {
+  font-size: var(--type-ui);
+}
+.public-shell .public-footer-brand > p,
+.public-shell .public-footer-grid nav > p {
+  font-size: var(--type-secondary);
+}
+.public-shell .category-filters button {
+  font-size: var(--type-secondary);
+}
+.public-shell .catalog-search input,
+.public-shell .prose p,
+.public-shell .about-hero p,
+.public-shell .certificate-explainer p {
+  font-size: var(--type-body);
+}
+.public-shell .catalog-toolbar > span,
+.public-shell .catalog-note p {
+  font-size: var(--type-secondary);
+}
+
+/* Dashboard navigation and operational information. */
+.workspace-shell .workspace-role,
+.workspace-shell .sidebar-label,
+.workspace-shell .dashboard-overline,
+.workspace-shell .welcome-kicker,
+.workspace-shell .eyebrow {
+  font-size: var(--type-caption);
+}
+.workspace-shell .sidebar-nav a,
+.workspace-shell .sidebar-secondary a,
+.workspace-shell .workspace-logout,
+.workspace-shell .workspace-guest-login {
+  font-size: var(--type-ui);
+  line-height: 1.5;
+}
+.workspace-shell .workspace-sidebar-note > span,
+.workspace-shell .workspace-sidebar-account strong,
+.workspace-shell .workspace-header-context strong {
+  font-size: var(--type-body);
+}
+.workspace-shell .workspace-sidebar-note p,
+.workspace-shell .workspace-sidebar-account small,
+.workspace-shell .workspace-header-context > div > span,
+.workspace-shell .workspace-footer,
+.workspace-shell .preview-notice,
+.workspace-shell .dashboard-date,
+.workspace-shell .dashboard-heading p {
+  font-size: var(--type-secondary);
+}
+.workspace-shell .preview-notice > span {
+  font-size: var(--type-caption);
+}
+.workspace-shell .welcome-copy p {
+  font-size: var(--type-body);
+  line-height: 1.8;
+}
+.workspace-shell .welcome-cta,
+.workspace-shell .discovery-filters button,
+.workspace-shell .studio-section-heading > a,
+.workspace-shell .start-action {
+  font-size: var(--type-ui);
+}
+.workspace-shell .studio-section-heading h2 {
+  font-size: var(--type-section-title);
+}
+.workspace-shell .studio-section-heading p,
+.workspace-shell .planned-note,
+.workspace-shell .learning-note p {
+  font-size: var(--type-secondary);
+  line-height: 1.75;
+}
+.workspace-shell .app-workspace .category-label,
+.workspace-shell .app-workspace .program-status,
+.workspace-shell .app-workspace .card-bottom > span {
+  font-size: var(--type-secondary);
+}
+.workspace-shell .app-workspace .program-card h3 {
+  font-size: var(--type-card-title);
+  line-height: 1.45;
+}
+.workspace-shell .app-workspace .program-card p {
+  font-size: var(--type-body);
+  line-height: 1.75;
+}
+.workspace-shell .card-eyebrow {
+  gap: 8px 12px;
+}
+.workspace-shell .topic-tile strong {
+  font-size: var(--type-body);
+}
+.workspace-shell .topic-tile small {
+  font-size: var(--type-secondary);
+}
+.workspace-shell .topic-tile {
+  min-width: 0;
+}
+
+/* Status summaries can wrap without shrinking their labels. */
+.workspace-shell .overview-tile {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  gap: 10px;
+  min-height: 96px;
+}
+.workspace-shell .overview-tile strong {
+  font-size: var(--type-ui);
+  line-height: 1.45;
+  max-width: none;
+}
+.workspace-shell .overview-tile div > span {
+  font-size: var(--type-secondary);
+  line-height: 1.5;
+}
+.workspace-shell .overview-number {
+  font-size: 1.5rem;
+}
+
+/* Agenda and calendar: date, action, and description remain legible. */
+.workspace-shell .panel-heading h2,
+.workspace-shell .agenda-heading h3 {
+  font-size: var(--type-card-title);
+  line-height: 1.4;
+}
+.workspace-shell .calendar-month > span {
+  font-size: var(--type-body);
+}
+.workspace-shell .calendar-week,
+.workspace-shell .calendar-days button,
+.workspace-shell .agenda-date small,
+.workspace-shell .agenda-event > span > small,
+.workspace-shell .calendar-timezone,
+.workspace-shell .step-count {
+  font-size: var(--type-secondary);
+}
+.workspace-shell .calendar-days button {
+  min-width: 30px;
+  min-height: 34px;
+}
+.workspace-shell .agenda-placeholder h4,
+.workspace-shell .agenda-event strong {
+  font-size: var(--type-body);
+  line-height: 1.5;
+}
+.workspace-shell .agenda-placeholder p,
+.workspace-shell .agenda-placeholder .text-link,
+.workspace-shell .agenda-heading .text-link,
+.workspace-shell .start-panel > p,
+.workspace-shell .start-panel li,
+.workspace-shell .together-panel p,
+.workspace-shell .together-panel a {
+  font-size: var(--type-secondary);
+  line-height: 1.75;
+}
+.workspace-shell .together-panel .dashboard-overline {
+  font-size: var(--type-caption);
+}
+
+/* Management data and shared forms. */
+.management-shell .admin-stats .panel span,
+.management-shell .section-title p,
+.management-shell .participant-row p,
+.management-shell .participant-row small,
+.management-shell .muted {
+  font-size: var(--type-secondary);
+}
+.management-shell th {
+  font-size: var(--type-secondary);
+}
+.management-shell td {
+  font-size: var(--type-ui);
+}
+.management-shell .participant-row strong {
+  font-size: var(--type-body);
+}
+.management-shell .section-title h2 {
+  font-size: 1.25rem;
+}
+.management-shell .row-actions .button {
+  font-size: var(--type-secondary);
+}
+.public-shell .button,
+.workspace-shell .button,
+.modal .button {
+  font-size: var(--type-ui);
+}
+.public-shell .page-intro p,
+.workspace-shell .page-intro p,
+.modal .form-stack,
+.modal .form-stack label,
+.modal .auth-intro p,
+.modal p,
+.modal .detail-content > p,
+.modal .updates-content p,
+.modal input,
+.modal select,
+.modal textarea {
+  font-size: var(--type-body);
+  line-height: 1.7;
+}
+.modal .form-note,
+.modal .detail-meta,
+.modal .detail-meta > span,
+.modal .category-label,
+.modal .checkbox-label,
+.modal .detail-outcomes li,
+.modal .segmented button,
+.modal .optional,
+.modal .search-results small,
+.modal .search-hint,
+.modal .profile-top div > span,
+.modal .registration-identity span,
+.workspace-shell .registration-copy > p,
+.workspace-shell .registration-status,
+.workspace-shell .own-certificate p,
+.workspace-shell .personal-tabs span,
+.workspace-shell .certificate-explainer li,
+.public-shell .certificate-explainer li,
+.public-shell .status-note,
+.toast,
+.public-shell .certificate-explainer > .muted,
+.workspace-shell .certificate-explainer > .muted,
+.verified-certificate dt,
+.verified-certificate dd,
+.verified-certificate > p,
+.status-pill {
+  font-size: var(--type-secondary);
+}
+.modal .search-results strong,
+.public-shell .faq summary,
+.public-shell .faq details p,
+.public-shell .empty-state p,
+.workspace-shell .empty-state p,
+.workspace-shell .personal-tabs button,
+.public-shell .verify-form label,
+.workspace-shell .verify-form label {
+  font-size: var(--type-body);
+}
+.modal .modal-top h2 {
+  font-size: 1.25rem;
+  line-height: 1.4;
+}
+.participant-shell .section-title h2 {
+  font-size: var(--type-section-title);
+}
+.participant-shell .section-title p {
+  font-size: var(--type-secondary);
+}
+
+@media (max-width: 1260px) {
+  .workspace-shell .overview-tile {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .workspace-shell .overview-icon {
+    display: none;
+  }
+  .workspace-shell .topic-tile > span {
+    display: none;
+  }
+}
+@media (max-width: 760px) {
+  .workspace-shell .workspace-header {
+    gap: 8px;
+    padding-inline: 16px;
+  }
+  .workspace-shell .workspace-header-context > div > span {
+    font-size: var(--type-caption);
+  }
+  .workspace-shell .workspace-header-context strong {
+    font-size: var(--type-secondary);
+  }
+  .workspace-shell .header-tools {
+    gap: 2px;
+  }
+  .workspace-shell .preview-notice {
+    flex-direction: column;
+    gap: 4px;
+  }
+  .public-shell .public-preview {
+    flex-wrap: wrap;
+  }
+  .workspace-shell .workspace-footer {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+}
+@media (max-width: 480px) {
+  .workspace-shell .webinar-overview {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .workspace-shell .overview-tile {
+    min-height: 78px;
+    padding: 14px 18px;
+  }
+  .workspace-shell .topic-tile > span {
+    display: grid;
+  }
+  .workspace-shell .studio-section-heading {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .workspace-shell .calendar-panel {
+    padding-inline: 18px;
+  }
+  .public-shell .public-tools .public-login {
+    font-size: var(--type-secondary);
+  }
+}
